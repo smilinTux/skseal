@@ -1,0 +1,633 @@
+{
+  "template_id": "tpl-pma-001",
+  "name": "PMA Membership Application",
+  "external_id": "PMA-001",
+  "folder_name": "Sovereign",
+  "description": "Private Membership Association membership application form. Establishes the applicant's voluntary association, consent to bylaws, and acknowledgment of the private nature of the association. Two signers: Requestor (applicant) and Steward (admitting officer).",
+  "version": 1,
+  "tags": ["sovereign", "pma", "membership", "private-association"],
+  "submitters": [
+    {
+      "role": "Requestor",
+      "name": "",
+      "email": "",
+      "order": 0
+    },
+    {
+      "role": "Steward",
+      "name": "",
+      "email": "",
+      "order": 1
+    }
+  ],
+  "settings": {
+    "expire_after_days": 14,
+    "reminder_days": 2,
+    "allow_decline": true,
+    "allow_forwarding": false,
+    "sequential_signing": true
+  },
+  "documents": [
+    {
+      "name": "PMA Membership Application",
+      "attachment_uuid": null,
+      "fields": [
+        {
+          "uuid": "pma-f-001",
+          "name": "association_name",
+          "type": "text",
+          "role": "Steward",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Association Name",
+          "description": "Full name of the Private Membership Association",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.108, "w": 0.55, "h": 0.028}
+          ],
+          "preferences": {
+            "font_size": 13,
+            "font_type": "bold",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Association name is required",
+            "min": 2,
+            "max": 200
+          }
+        },
+        {
+          "uuid": "pma-f-002",
+          "name": "application_date",
+          "type": "date",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Application Date",
+          "description": "Date this membership application is submitted",
+          "areas": [
+            {"page": 1, "x": 0.62, "y": 0.108, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-003",
+          "name": "requestor_full_name",
+          "type": "text",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Applicant Full Legal Name",
+          "description": "Full legal name as it appears on government-issued identification",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.195, "w": 0.55, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[A-Za-z\\s\\-\\.]+$",
+            "message": "Please enter your full legal name",
+            "min": 2,
+            "max": 120
+          }
+        },
+        {
+          "uuid": "pma-f-004",
+          "name": "requestor_address",
+          "type": "text",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Applicant Mailing Address",
+          "description": "Full mailing address: street, city, state, ZIP",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.228, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-005",
+          "name": "requestor_email",
+          "type": "text",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Applicant Email Address",
+          "description": "Your primary email address for association communications",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.261, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+            "message": "Please enter a valid email address",
+            "min": null,
+            "max": null
+          }
+        },
+        {
+          "uuid": "pma-f-006",
+          "name": "requestor_phone",
+          "type": "phone",
+          "role": "Requestor",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Applicant Phone Number",
+          "description": "Optional contact phone number",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.261, "w": 0.3, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-007",
+          "name": "pgp_fingerprint",
+          "type": "text",
+          "role": "Requestor",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "PGP Key Fingerprint (Optional)",
+          "description": "Your PGP public key fingerprint for sovereign identity verification (40 hex characters)",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.294, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Courier",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^([0-9A-Fa-f]{40}|[0-9A-Fa-f]{4}( [0-9A-Fa-f]{4}){9})$",
+            "message": "Must be a 40-character hexadecimal PGP fingerprint",
+            "min": null,
+            "max": null
+          }
+        },
+        {
+          "uuid": "pma-f-008",
+          "name": "membership_type",
+          "type": "select",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": "General Member",
+          "options": ["General Member", "Founding Member", "Supporting Member", "Associate Member", "Honorary Member"],
+          "title": "Membership Type Requested",
+          "description": "Select the membership tier you are applying for",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.36, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-009",
+          "name": "referral_member",
+          "type": "text",
+          "role": "Requestor",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Referred By (Member Name)",
+          "description": "Name of the existing member who referred you (if applicable)",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.36, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-010",
+          "name": "bylaws_acceptance",
+          "type": "checkbox",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Acceptance of Bylaws",
+          "description": "I have read and agree to be bound by the Association's bylaws and operating principles",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.43, "w": 0.025, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-011",
+          "name": "private_nature_acceptance",
+          "type": "checkbox",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Acknowledgment of Private Nature",
+          "description": "I understand this is a private association operating outside public commerce and government jurisdiction per constitutional private association doctrine",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.463, "w": 0.025, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-012",
+          "name": "voluntary_membership_acceptance",
+          "type": "checkbox",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Voluntary Membership",
+          "description": "I affirm that my membership is entirely voluntary and that I am entering this agreement of my own free will",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.496, "w": 0.025, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-013",
+          "name": "member_purpose_statement",
+          "type": "text",
+          "role": "Requestor",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Why You Are Seeking Membership",
+          "description": "Brief statement of your purpose or interest in joining the association",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.565, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-014",
+          "name": "requestor_initials_p1",
+          "type": "initials",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Applicant Initials",
+          "description": "Applicant initials acknowledging page 1 terms",
+          "areas": [
+            {"page": 1, "x": 0.06, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-015",
+          "name": "requestor_signature",
+          "type": "signature",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Applicant Signature",
+          "description": "Applicant's signature certifying truthfulness and voluntary consent",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.62, "w": 0.38, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-016",
+          "name": "requestor_sign_name",
+          "type": "text",
+          "role": "Requestor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Applicant Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.695, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-017",
+          "name": "requestor_sign_date",
+          "type": "datenow",
+          "role": "Requestor",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Applied",
+          "description": "Date automatically recorded at time of applicant signature",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.728, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-018",
+          "name": "steward_full_name",
+          "type": "text",
+          "role": "Steward",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Steward Full Name",
+          "description": "Full name of the admitting steward or officer",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.62, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-019",
+          "name": "steward_role",
+          "type": "text",
+          "role": "Steward",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Steward Title / Role",
+          "description": "Your official title within the association (e.g., 'Founding Steward', 'Membership Officer')",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.653, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-020",
+          "name": "membership_number",
+          "type": "text",
+          "role": "Steward",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Assigned Member Number",
+          "description": "Member number assigned by the Steward upon acceptance",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.686, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "bold",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-021",
+          "name": "admission_decision",
+          "type": "radio",
+          "role": "Steward",
+          "required": true,
+          "readonly": false,
+          "default_value": "Accepted",
+          "options": ["Accepted", "Accepted with Conditions", "Deferred", "Declined"],
+          "title": "Admission Decision",
+          "description": "Steward's decision on this membership application",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.72, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-022",
+          "name": "steward_signature",
+          "type": "signature",
+          "role": "Steward",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Steward Signature",
+          "description": "Steward signature admitting the applicant to the association",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.78, "w": 0.38, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "pma-f-023",
+          "name": "steward_sign_date",
+          "type": "datenow",
+          "role": "Steward",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Admitted",
+          "description": "Date automatically recorded when Steward signs",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.855, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        }
+      ]
+    }
+  ]
+}

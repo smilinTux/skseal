@@ -1,0 +1,688 @@
+{
+  "template_id": "tpl-sa-001",
+  "name": "Service Agreement",
+  "external_id": "SA-001",
+  "folder_name": "Contracts",
+  "description": "Professional services agreement between a service provider and a client. Defines scope of work, compensation, timelines, intellectual property, and termination conditions.",
+  "version": 1,
+  "tags": ["legal", "contract", "services", "freelance", "consulting"],
+  "submitters": [
+    {
+      "role": "Provider",
+      "name": "",
+      "email": "",
+      "order": 0
+    },
+    {
+      "role": "Client",
+      "name": "",
+      "email": "",
+      "order": 1
+    }
+  ],
+  "settings": {
+    "expire_after_days": 21,
+    "reminder_days": 3,
+    "allow_decline": true,
+    "allow_forwarding": false,
+    "sequential_signing": true
+  },
+  "documents": [
+    {
+      "name": "Service Agreement",
+      "attachment_uuid": null,
+      "fields": [
+        {
+          "uuid": "sa-f-001",
+          "name": "agreement_date",
+          "type": "date",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Agreement Date",
+          "description": "Date this agreement is entered into",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.108, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-002",
+          "name": "provider_full_name",
+          "type": "text",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Provider Full Legal Name",
+          "description": "Full legal name of the service provider or business entity",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.19, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Provider name is required",
+            "min": 2,
+            "max": 200
+          }
+        },
+        {
+          "uuid": "sa-f-003",
+          "name": "provider_address",
+          "type": "text",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Provider Address",
+          "description": "Provider's business or mailing address",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.222, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-004",
+          "name": "provider_email",
+          "type": "text",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Provider Email",
+          "description": "Provider's primary contact email address",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.255, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+            "message": "Please enter a valid email address",
+            "min": null,
+            "max": null
+          }
+        },
+        {
+          "uuid": "sa-f-005",
+          "name": "client_full_name",
+          "type": "text",
+          "role": "Client",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Client Full Legal Name",
+          "description": "Full legal name of the client or client organization",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.19, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Client name is required",
+            "min": 2,
+            "max": 200
+          }
+        },
+        {
+          "uuid": "sa-f-006",
+          "name": "client_address",
+          "type": "text",
+          "role": "Client",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Client Address",
+          "description": "Client's business or mailing address",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.222, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-007",
+          "name": "client_email",
+          "type": "text",
+          "role": "Client",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Client Email",
+          "description": "Client's primary contact email address",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.255, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+            "message": "Please enter a valid email address",
+            "min": null,
+            "max": null
+          }
+        },
+        {
+          "uuid": "sa-f-008",
+          "name": "scope_of_work",
+          "type": "text",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Scope of Work / Services",
+          "description": "Describe the services to be performed",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.345, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-009",
+          "name": "deliverables",
+          "type": "text",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Deliverables",
+          "description": "List the specific deliverables or milestones",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.378, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-010",
+          "name": "start_date",
+          "type": "date",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Project Start Date",
+          "description": "Date when work is scheduled to begin",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.44, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-011",
+          "name": "completion_date",
+          "type": "date",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Estimated Completion Date",
+          "description": "Estimated date when services will be completed",
+          "areas": [
+            {"page": 1, "x": 0.52, "y": 0.44, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-012",
+          "name": "total_fee",
+          "type": "number",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Total Fee ($)",
+          "description": "Total compensation for the services",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.51, "w": 0.22, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 13,
+            "font_type": "bold",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "right",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Fee must be a positive number",
+            "min": 0,
+            "max": 99999999
+          }
+        },
+        {
+          "uuid": "sa-f-013",
+          "name": "payment_schedule",
+          "type": "select",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": "Upon completion",
+          "options": ["Upon completion", "50% upfront / 50% on delivery", "Monthly installments", "Milestone-based", "Net 30"],
+          "title": "Payment Schedule",
+          "description": "When and how payments are to be made",
+          "areas": [
+            {"page": 1, "x": 0.42, "y": 0.51, "w": 0.45, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-014",
+          "name": "ip_ownership",
+          "type": "radio",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": "Client owns all work product",
+          "options": ["Client owns all work product", "Provider retains IP, grants license", "Joint ownership"],
+          "title": "Intellectual Property Ownership",
+          "description": "Who owns the intellectual property created under this agreement",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.585, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-015",
+          "name": "governing_state",
+          "type": "text",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Governing Law State",
+          "description": "State whose laws govern this agreement",
+          "areas": [
+            {"page": 1, "x": 0.52, "y": 0.645, "w": 0.22, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-016",
+          "name": "provider_initials_p1",
+          "type": "initials",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Provider Initials",
+          "description": "Provider initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.06, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-017",
+          "name": "client_initials_p1",
+          "type": "initials",
+          "role": "Client",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Client Initials",
+          "description": "Client initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.15, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-018",
+          "name": "provider_signature",
+          "type": "signature",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Provider Signature",
+          "description": "Signature of the service provider",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.72, "w": 0.35, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-019",
+          "name": "provider_sign_name",
+          "type": "text",
+          "role": "Provider",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Provider Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.795, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-020",
+          "name": "provider_title",
+          "type": "text",
+          "role": "Provider",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Provider Title",
+          "description": "Your professional title or role",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.828, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-021",
+          "name": "provider_sign_date",
+          "type": "datenow",
+          "role": "Provider",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Signed",
+          "description": "Date automatically recorded at signing",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.862, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-022",
+          "name": "client_signature",
+          "type": "signature",
+          "role": "Client",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Client Signature",
+          "description": "Signature of the client",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.72, "w": 0.35, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-023",
+          "name": "client_sign_name",
+          "type": "text",
+          "role": "Client",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Client Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.795, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-024",
+          "name": "client_title",
+          "type": "text",
+          "role": "Client",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Client Title / Role",
+          "description": "Client's title or authorized role",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.828, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "sa-f-025",
+          "name": "client_sign_date",
+          "type": "datenow",
+          "role": "Client",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Signed",
+          "description": "Date automatically recorded at signing",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.862, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        }
+      ]
+    }
+  ]
+}

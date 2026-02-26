@@ -1,0 +1,779 @@
+{
+  "template_id": "tpl-oa-001",
+  "name": "LLC Operating Agreement",
+  "external_id": "OA-001",
+  "folder_name": "Corporate",
+  "description": "Operating Agreement for a multi-member Limited Liability Company defining ownership, management responsibilities, profit sharing, and dissolution procedures. Three signers: Member A, Member B, and a Witness.",
+  "version": 1,
+  "tags": ["legal", "llc", "corporate", "operating-agreement"],
+  "submitters": [
+    {
+      "role": "Member A",
+      "name": "",
+      "email": "",
+      "order": 0
+    },
+    {
+      "role": "Member B",
+      "name": "",
+      "email": "",
+      "order": 1
+    },
+    {
+      "role": "Witness",
+      "name": "",
+      "email": "",
+      "order": 2
+    }
+  ],
+  "settings": {
+    "expire_after_days": 45,
+    "reminder_days": 5,
+    "allow_decline": true,
+    "allow_forwarding": false,
+    "sequential_signing": true
+  },
+  "documents": [
+    {
+      "name": "LLC Operating Agreement",
+      "attachment_uuid": null,
+      "fields": [
+        {
+          "uuid": "oa-f-001",
+          "name": "llc_name",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "LLC Full Legal Name",
+          "description": "Full legal name of the LLC including 'LLC' or 'L.L.C.'",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.13, "w": 0.55, "h": 0.028}
+          ],
+          "preferences": {
+            "font_size": 13,
+            "font_type": "bold",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "LLC name is required",
+            "min": 3,
+            "max": 200
+          }
+        },
+        {
+          "uuid": "oa-f-002",
+          "name": "formation_state",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "State of Formation",
+          "description": "State in which the LLC is or will be registered",
+          "areas": [
+            {"page": 1, "x": 0.52, "y": 0.165, "w": 0.22, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-003",
+          "name": "effective_date",
+          "type": "date",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Effective Date",
+          "description": "Date this operating agreement takes effect",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.108, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-004",
+          "name": "principal_address",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Principal Office Address",
+          "description": "Primary business address of the LLC",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.198, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-005",
+          "name": "business_purpose",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Business Purpose",
+          "description": "Brief description of the LLC's primary business activities",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.265, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-006",
+          "name": "member_a_full_name",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member A Full Legal Name",
+          "description": "Full legal name of Member A",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.36, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[A-Za-z\\s\\-\\.]+$",
+            "message": "Please enter a valid legal name",
+            "min": 2,
+            "max": 120
+          }
+        },
+        {
+          "uuid": "oa-f-007",
+          "name": "member_a_address",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member A Address",
+          "description": "Member A's residential or business address",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.393, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-008",
+          "name": "member_a_ownership_pct",
+          "type": "number",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": "50",
+          "options": [],
+          "title": "Member A Ownership %",
+          "description": "Member A's percentage interest in the LLC",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.426, "w": 0.12, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Ownership percentage must be between 1 and 100",
+            "min": 1,
+            "max": 100
+          }
+        },
+        {
+          "uuid": "oa-f-009",
+          "name": "member_a_capital_contribution",
+          "type": "number",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member A Capital Contribution ($)",
+          "description": "Dollar amount of Member A's initial capital contribution",
+          "areas": [
+            {"page": 1, "x": 0.28, "y": 0.426, "w": 0.18, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "right",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Must be a positive dollar amount",
+            "min": 0,
+            "max": 999999999
+          }
+        },
+        {
+          "uuid": "oa-f-010",
+          "name": "member_b_full_name",
+          "type": "text",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member B Full Legal Name",
+          "description": "Full legal name of Member B",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.36, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[A-Za-z\\s\\-\\.]+$",
+            "message": "Please enter a valid legal name",
+            "min": 2,
+            "max": 120
+          }
+        },
+        {
+          "uuid": "oa-f-011",
+          "name": "member_b_address",
+          "type": "text",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member B Address",
+          "description": "Member B's residential or business address",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.393, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-012",
+          "name": "member_b_ownership_pct",
+          "type": "number",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": "50",
+          "options": [],
+          "title": "Member B Ownership %",
+          "description": "Member B's percentage interest in the LLC",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.426, "w": 0.12, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Ownership percentage must be between 1 and 100",
+            "min": 1,
+            "max": 100
+          }
+        },
+        {
+          "uuid": "oa-f-013",
+          "name": "member_b_capital_contribution",
+          "type": "number",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member B Capital Contribution ($)",
+          "description": "Dollar amount of Member B's initial capital contribution",
+          "areas": [
+            {"page": 1, "x": 0.71, "y": 0.426, "w": 0.18, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "right",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Must be a positive dollar amount",
+            "min": 0,
+            "max": 999999999
+          }
+        },
+        {
+          "uuid": "oa-f-014",
+          "name": "management_type",
+          "type": "radio",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": "Member-Managed",
+          "options": ["Member-Managed", "Manager-Managed"],
+          "title": "Management Structure",
+          "description": "Select whether the LLC is member-managed or manager-managed",
+          "areas": [
+            {"page": 1, "x": 0.22, "y": 0.51, "w": 0.2, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-015",
+          "name": "fiscal_year_end",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": "December 31",
+          "options": [],
+          "title": "Fiscal Year End",
+          "description": "Last day of the LLC's fiscal year (e.g., 'December 31')",
+          "areas": [
+            {"page": 1, "x": 0.52, "y": 0.51, "w": 0.22, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-016",
+          "name": "member_a_initials_p1",
+          "type": "initials",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member A Initials",
+          "description": "Member A initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.06, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-017",
+          "name": "member_b_initials_p1",
+          "type": "initials",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member B Initials",
+          "description": "Member B initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.15, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-018",
+          "name": "member_a_initials_p2",
+          "type": "initials",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member A Initials (Page 2)",
+          "description": "Member A initials confirming page 2",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-019",
+          "name": "member_b_initials_p2",
+          "type": "initials",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member B Initials (Page 2)",
+          "description": "Member B initials confirming page 2",
+          "areas": [
+            {"page": 2, "x": 0.15, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-020",
+          "name": "member_a_signature",
+          "type": "signature",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member A Signature",
+          "description": "Signature of Member A",
+          "areas": [
+            {"page": 3, "x": 0.06, "y": 0.65, "w": 0.35, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-021",
+          "name": "member_a_sign_name",
+          "type": "text",
+          "role": "Member A",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member A Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 3, "x": 0.06, "y": 0.722, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-022",
+          "name": "member_a_sign_date",
+          "type": "datenow",
+          "role": "Member A",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Signed",
+          "description": "Date automatically recorded at signing",
+          "areas": [
+            {"page": 3, "x": 0.06, "y": 0.755, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-023",
+          "name": "member_b_signature",
+          "type": "signature",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member B Signature",
+          "description": "Signature of Member B",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.65, "w": 0.35, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-024",
+          "name": "member_b_sign_name",
+          "type": "text",
+          "role": "Member B",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Member B Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.722, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-025",
+          "name": "member_b_sign_date",
+          "type": "datenow",
+          "role": "Member B",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Signed",
+          "description": "Date automatically recorded at signing",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.755, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-026",
+          "name": "witness_full_name",
+          "type": "text",
+          "role": "Witness",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Witness Full Name",
+          "description": "Full name of the witness",
+          "areas": [
+            {"page": 3, "x": 0.12, "y": 0.86, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-027",
+          "name": "witness_signature",
+          "type": "signature",
+          "role": "Witness",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Witness Signature",
+          "description": "Signature of the witness",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.83, "w": 0.35, "h": 0.05}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "oa-f-028",
+          "name": "witness_sign_date",
+          "type": "datenow",
+          "role": "Witness",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Witness Date",
+          "description": "Date automatically recorded when witness signs",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.895, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        }
+      ]
+    }
+  ]
+}

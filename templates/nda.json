@@ -1,0 +1,553 @@
+{
+  "template_id": "tpl-nda-001",
+  "name": "Non-Disclosure Agreement",
+  "external_id": "NDA-001",
+  "folder_name": "Legal",
+  "description": "Mutual Non-Disclosure Agreement protecting confidential information shared between two parties. Suitable for business relationships, employment, and partnership discussions.",
+  "version": 1,
+  "tags": ["legal", "nda", "confidentiality"],
+  "submitters": [
+    {
+      "role": "Discloser",
+      "name": "",
+      "email": "",
+      "order": 0
+    },
+    {
+      "role": "Recipient",
+      "name": "",
+      "email": "",
+      "order": 1
+    }
+  ],
+  "settings": {
+    "expire_after_days": 30,
+    "reminder_days": 3,
+    "allow_decline": true,
+    "allow_forwarding": false,
+    "sequential_signing": true
+  },
+  "documents": [
+    {
+      "name": "Non-Disclosure Agreement",
+      "attachment_uuid": null,
+      "fields": [
+        {
+          "uuid": "nda-f-001",
+          "name": "effective_date",
+          "type": "date",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Effective Date",
+          "description": "The date this agreement becomes effective",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.115, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-002",
+          "name": "discloser_full_name",
+          "type": "text",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Discloser Full Legal Name",
+          "description": "Full legal name of the disclosing party",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.195, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[A-Za-z\\s\\-\\.]+$",
+            "message": "Please enter a valid full legal name",
+            "min": 2,
+            "max": 120
+          }
+        },
+        {
+          "uuid": "nda-f-003",
+          "name": "discloser_entity",
+          "type": "text",
+          "role": "Discloser",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Discloser Entity / Company",
+          "description": "Company or organization name (if applicable)",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.228, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-004",
+          "name": "discloser_address",
+          "type": "text",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Discloser Address",
+          "description": "Street address, city, state, ZIP",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.261, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-005",
+          "name": "recipient_full_name",
+          "type": "text",
+          "role": "Recipient",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Recipient Full Legal Name",
+          "description": "Full legal name of the receiving party",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.195, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[A-Za-z\\s\\-\\.]+$",
+            "message": "Please enter a valid full legal name",
+            "min": 2,
+            "max": 120
+          }
+        },
+        {
+          "uuid": "nda-f-006",
+          "name": "recipient_entity",
+          "type": "text",
+          "role": "Recipient",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Recipient Entity / Company",
+          "description": "Company or organization name (if applicable)",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.228, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-007",
+          "name": "recipient_address",
+          "type": "text",
+          "role": "Recipient",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Recipient Address",
+          "description": "Street address, city, state, ZIP",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.261, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-008",
+          "name": "confidential_subject",
+          "type": "text",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Subject Matter / Purpose",
+          "description": "Describe the purpose of the disclosure (e.g., 'software product evaluation')",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.37, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-009",
+          "name": "nda_term_years",
+          "type": "number",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": "2",
+          "options": [],
+          "title": "Agreement Term (Years)",
+          "description": "Duration of confidentiality obligations in years",
+          "areas": [
+            {"page": 1, "x": 0.46, "y": 0.44, "w": 0.08, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Term must be between 1 and 10 years",
+            "min": 1,
+            "max": 10
+          }
+        },
+        {
+          "uuid": "nda-f-010",
+          "name": "governing_state",
+          "type": "text",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Governing Law State",
+          "description": "State whose laws govern this agreement",
+          "areas": [
+            {"page": 1, "x": 0.52, "y": 0.615, "w": 0.22, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-011",
+          "name": "discloser_initials_p1",
+          "type": "initials",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Discloser Initials",
+          "description": "Discloser initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.06, "y": 0.96, "w": 0.08, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-012",
+          "name": "recipient_initials_p1",
+          "type": "initials",
+          "role": "Recipient",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Recipient Initials",
+          "description": "Recipient initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.16, "y": 0.96, "w": 0.08, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-013",
+          "name": "discloser_signature",
+          "type": "signature",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Discloser Signature",
+          "description": "Signature of the disclosing party",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.72, "w": 0.35, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-014",
+          "name": "discloser_sign_name",
+          "type": "text",
+          "role": "Discloser",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Discloser Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.795, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-015",
+          "name": "discloser_title",
+          "type": "text",
+          "role": "Discloser",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Discloser Title / Role",
+          "description": "Your title or role within the organization",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.828, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-016",
+          "name": "discloser_sign_date",
+          "type": "datenow",
+          "role": "Discloser",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Signed",
+          "description": "Date automatically recorded at time of signing",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.862, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-017",
+          "name": "recipient_signature",
+          "type": "signature",
+          "role": "Recipient",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Recipient Signature",
+          "description": "Signature of the receiving party",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.72, "w": 0.35, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-018",
+          "name": "recipient_sign_name",
+          "type": "text",
+          "role": "Recipient",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Recipient Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.795, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-019",
+          "name": "recipient_title",
+          "type": "text",
+          "role": "Recipient",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Recipient Title / Role",
+          "description": "Your title or role within the organization",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.828, "w": 0.35, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "nda-f-020",
+          "name": "recipient_sign_date",
+          "type": "datenow",
+          "role": "Recipient",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date Signed",
+          "description": "Date automatically recorded at time of signing",
+          "areas": [
+            {"page": 2, "x": 0.55, "y": 0.862, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        }
+      ]
+    }
+  ]
+}

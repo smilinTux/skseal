@@ -1,0 +1,834 @@
+{
+  "template_id": "tpl-td-001",
+  "name": "Trust Declaration",
+  "external_id": "TD-001",
+  "folder_name": "Sovereign",
+  "description": "Declaration of Trust establishing a private trust, naming the trustee, defining the trust's purpose, assets, and governance terms. Three signers: Trustor (settlor), Trustee (accepting administrator), and Notary (acknowledgment witness).",
+  "version": 1,
+  "tags": ["sovereign", "trust", "legal", "estate-planning", "private-trust"],
+  "submitters": [
+    {
+      "role": "Trustor",
+      "name": "",
+      "email": "",
+      "order": 0
+    },
+    {
+      "role": "Trustee",
+      "name": "",
+      "email": "",
+      "order": 1
+    },
+    {
+      "role": "Notary",
+      "name": "",
+      "email": "",
+      "order": 2
+    }
+  ],
+  "settings": {
+    "expire_after_days": 60,
+    "reminder_days": 7,
+    "allow_decline": true,
+    "allow_forwarding": false,
+    "sequential_signing": true
+  },
+  "documents": [
+    {
+      "name": "Trust Declaration",
+      "attachment_uuid": null,
+      "fields": [
+        {
+          "uuid": "td-f-001",
+          "name": "trust_name",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trust Name",
+          "description": "Full legal name of the trust (e.g., 'The John A. Smith Family Trust')",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.108, "w": 0.60, "h": 0.028}
+          ],
+          "preferences": {
+            "font_size": 13,
+            "font_type": "bold",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": null,
+            "message": "Trust name is required",
+            "min": 3,
+            "max": 200
+          }
+        },
+        {
+          "uuid": "td-f-002",
+          "name": "declaration_date",
+          "type": "date",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Declaration Date",
+          "description": "Date this trust declaration is executed",
+          "areas": [
+            {"page": 1, "x": 0.62, "y": 0.108, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-003",
+          "name": "trustor_full_name",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustor / Settlor Full Legal Name",
+          "description": "Full legal name of the person creating and funding the trust",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.195, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[A-Za-z\\s\\-\\.]+$",
+            "message": "Please enter a valid full legal name",
+            "min": 2,
+            "max": 120
+          }
+        },
+        {
+          "uuid": "td-f-004",
+          "name": "trustor_address",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustor Address",
+          "description": "Trustor's residential address",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.228, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-005",
+          "name": "trustee_full_name",
+          "type": "text",
+          "role": "Trustee",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Full Legal Name",
+          "description": "Full legal name of the person or entity accepting the role of trustee",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.195, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": {
+            "pattern": "^[A-Za-z\\s\\-\\.]+$",
+            "message": "Please enter a valid full legal name",
+            "min": 2,
+            "max": 120
+          }
+        },
+        {
+          "uuid": "td-f-006",
+          "name": "trustee_address",
+          "type": "text",
+          "role": "Trustee",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Address",
+          "description": "Trustee's address",
+          "areas": [
+            {"page": 1, "x": 0.55, "y": 0.228, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-007",
+          "name": "trust_purpose",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trust Purpose",
+          "description": "Describe the primary purpose and objectives of the trust",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.32, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-008",
+          "name": "initial_corpus",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Initial Trust Corpus / Assets",
+          "description": "Describe the property or assets initially transferred to the trust",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.353, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-009",
+          "name": "beneficiaries",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Beneficiaries",
+          "description": "Name(s) of the trust's beneficiaries and their relationship to the Trustor",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.386, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-010",
+          "name": "successor_trustee",
+          "type": "text",
+          "role": "Trustor",
+          "required": false,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Successor Trustee (if any)",
+          "description": "Name of the successor trustee if the primary trustee is unable to serve",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.419, "w": 0.55, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-011",
+          "name": "trust_type",
+          "type": "radio",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": "Revocable",
+          "options": ["Revocable", "Irrevocable", "Testamentary", "Charitable"],
+          "title": "Trust Type",
+          "description": "Select the type of trust being established",
+          "areas": [
+            {"page": 1, "x": 0.12, "y": 0.488, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-012",
+          "name": "governing_state",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Governing Law State",
+          "description": "State whose laws govern this trust",
+          "areas": [
+            {"page": 1, "x": 0.52, "y": 0.555, "w": 0.22, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-013",
+          "name": "trustor_initials_p1",
+          "type": "initials",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustor Initials",
+          "description": "Trustor initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.06, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-014",
+          "name": "trustee_initials_p1",
+          "type": "initials",
+          "role": "Trustee",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Initials",
+          "description": "Trustee initials confirming page 1",
+          "areas": [
+            {"page": 1, "x": 0.15, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-015",
+          "name": "trustor_initials_p2",
+          "type": "initials",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustor Initials (Page 2)",
+          "description": "Trustor initials confirming page 2",
+          "areas": [
+            {"page": 2, "x": 0.06, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-016",
+          "name": "trustee_initials_p2",
+          "type": "initials",
+          "role": "Trustee",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Initials (Page 2)",
+          "description": "Trustee initials confirming page 2",
+          "areas": [
+            {"page": 2, "x": 0.15, "y": 0.96, "w": 0.07, "h": 0.03}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-017",
+          "name": "trustor_signature",
+          "type": "signature",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustor Signature",
+          "description": "Trustor's signature establishing the trust",
+          "areas": [
+            {"page": 3, "x": 0.06, "y": 0.55, "w": 0.38, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-018",
+          "name": "trustor_sign_name",
+          "type": "text",
+          "role": "Trustor",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustor Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 3, "x": 0.06, "y": 0.622, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-019",
+          "name": "trustor_sign_date",
+          "type": "datenow",
+          "role": "Trustor",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Trustor Date Signed",
+          "description": "Date automatically recorded at signing",
+          "areas": [
+            {"page": 3, "x": 0.06, "y": 0.655, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-020",
+          "name": "trustee_acceptance",
+          "type": "checkbox",
+          "role": "Trustee",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Acceptance",
+          "description": "I accept appointment as Trustee and agree to faithfully administer the trust according to its terms",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.52, "w": 0.025, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-021",
+          "name": "trustee_signature",
+          "type": "signature",
+          "role": "Trustee",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Signature",
+          "description": "Trustee's signature accepting appointment",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.555, "w": 0.38, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-022",
+          "name": "trustee_sign_name",
+          "type": "text",
+          "role": "Trustee",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Printed Name",
+          "description": "Print your full legal name",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.628, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-023",
+          "name": "trustee_sign_date",
+          "type": "datenow",
+          "role": "Trustee",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Trustee Date Signed",
+          "description": "Date automatically recorded at signing",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.661, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-024",
+          "name": "notary_county",
+          "type": "text",
+          "role": "Notary",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Notary County",
+          "description": "County in which the notarization takes place",
+          "areas": [
+            {"page": 3, "x": 0.22, "y": 0.755, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-025",
+          "name": "notary_state",
+          "type": "text",
+          "role": "Notary",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Notary State",
+          "description": "State in which the notary is commissioned",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.755, "w": 0.22, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-026",
+          "name": "notary_appeared_name",
+          "type": "text",
+          "role": "Notary",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Name(s) of Person(s) Who Appeared",
+          "description": "Full legal names of the parties who personally appeared before the notary",
+          "areas": [
+            {"page": 3, "x": 0.12, "y": 0.788, "w": 0.76, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-027",
+          "name": "notary_full_name",
+          "type": "text",
+          "role": "Notary",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Notary Full Name",
+          "description": "Full legal name of the notary public",
+          "areas": [
+            {"page": 3, "x": 0.12, "y": 0.836, "w": 0.38, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-028",
+          "name": "notary_commission_expires",
+          "type": "date",
+          "role": "Notary",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Notary Commission Expiration Date",
+          "description": "Date the notary's commission expires",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.836, "w": 0.25, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-029",
+          "name": "notary_signature",
+          "type": "signature",
+          "role": "Notary",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Notary Signature",
+          "description": "Notary public signature and acknowledgment",
+          "areas": [
+            {"page": 3, "x": 0.06, "y": 0.875, "w": 0.38, "h": 0.055}
+          ],
+          "preferences": {
+            "font_size": 12,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-030",
+          "name": "notary_stamp",
+          "type": "stamp",
+          "role": "Notary",
+          "required": true,
+          "readonly": false,
+          "default_value": null,
+          "options": [],
+          "title": "Notary Seal / Stamp",
+          "description": "Official notary seal or stamp",
+          "areas": [
+            {"page": 3, "x": 0.55, "y": 0.865, "w": 0.15, "h": 0.075}
+          ],
+          "preferences": {
+            "font_size": 10,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "center",
+            "valign": "center"
+          },
+          "validation": null
+        },
+        {
+          "uuid": "td-f-031",
+          "name": "notary_sign_date",
+          "type": "datenow",
+          "role": "Notary",
+          "required": true,
+          "readonly": true,
+          "default_value": null,
+          "options": [],
+          "title": "Date of Notarization",
+          "description": "Date automatically recorded at notary signing",
+          "areas": [
+            {"page": 3, "x": 0.74, "y": 0.875, "w": 0.18, "h": 0.025}
+          ],
+          "preferences": {
+            "font_size": 11,
+            "font_type": "normal",
+            "font": "Helvetica",
+            "color": "black",
+            "background": "white",
+            "align": "left",
+            "valign": "center"
+          },
+          "validation": null
+        }
+      ]
+    }
+  ]
+}
