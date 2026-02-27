@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -20,7 +21,9 @@ from .models import (
     Document,
     DocumentField,
     DocumentStatus,
+    SignatureRecord,
     Signer,
+    SignerStatus,
     Template,
 )
 from .store import DocumentStore
@@ -31,6 +34,14 @@ app = FastAPI(
     title="SKSeal",
     description="Sovereign Document Signing — PGP-backed, legally binding, no middleman.",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 _store = DocumentStore()
@@ -66,6 +77,20 @@ class VerifyRequest(BaseModel):
     """Request body for verifying a document's signatures."""
 
     public_keys: dict[str, str] = {}
+
+
+class ClientSignRequest(BaseModel):
+    """Request body for submitting a client-side signature.
+
+    The browser signs locally with OpenPGP.js and sends only the
+    signature — the private key never leaves the client.
+    """
+
+    signer_id: str
+    signature_armor: str
+    document_hash: str
+    fingerprint: str
+    field_values: dict[str, str] = {}
 
 
 class SealRequest(BaseModel):
@@ -253,6 +278,110 @@ async def sign_document(document_id: str, req: SignRequest) -> Document:
 
     _store.save_document(doc)
 
+    for entry in doc.audit_trail:
+        _store.append_audit(entry)
+
+    return doc
+
+
+@app.post("/api/documents/{document_id}/sign-client", response_model=Document)
+async def sign_document_client(
+    document_id: str, req: ClientSignRequest
+) -> Document:
+    """Accept a pre-computed client-side PGP signature.
+
+    This is the preferred signing endpoint for browser-based workflows.
+    The client signs the document hash locally using OpenPGP.js and submits
+    only the signature. Private keys NEVER leave the browser.
+
+    The server:
+    1. Validates the signature against the cached public key
+    2. Verifies the document hash matches the stored PDF
+    3. Records the signature and updates document status
+    """
+    try:
+        doc = _store.load_document(document_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # Validate signer exists
+    signer = None
+    for s in doc.signers:
+        if s.signer_id == req.signer_id:
+            signer = s
+            break
+    if signer is None:
+        raise HTTPException(status_code=400, detail="Signer not found")
+    if signer.status == SignerStatus.SIGNED:
+        raise HTTPException(status_code=400, detail="Signer has already signed")
+
+    # Verify document hash matches stored PDF
+    pdf_data = _store.get_document_pdf(document_id)
+    if pdf_data is not None:
+        stored_hash = _engine.hash_bytes(pdf_data)
+        if stored_hash != req.document_hash:
+            raise HTTPException(
+                status_code=400,
+                detail="Document hash mismatch — PDF may have been modified",
+            )
+
+    # Verify the signature using the cached public key
+    public_key = _store.get_public_key(req.fingerprint)
+    if public_key is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No cached public key for {req.fingerprint[:16]}...",
+        )
+
+    record = SignatureRecord(
+        document_id=document_id,
+        signer_id=req.signer_id,
+        fingerprint=req.fingerprint,
+        document_hash=req.document_hash,
+        signature_armor=req.signature_armor,
+        field_values=req.field_values,
+    )
+
+    # Verify signature is cryptographically valid
+    is_valid = _engine.verify_signature(record, public_key, pdf_data=pdf_data)
+    if not is_valid:
+        raise HTTPException(
+            status_code=400, detail="Signature verification failed"
+        )
+
+    # Record the signature
+    doc.signatures.append(record)
+    now = record.signed_at
+    signer.status = SignerStatus.SIGNED
+    signer.signed_at = now
+    signer.fingerprint = req.fingerprint
+
+    doc.audit_trail.append(
+        AuditEntry(
+            document_id=document_id,
+            action=AuditAction.SIGNED,
+            actor_fingerprint=req.fingerprint,
+            actor_name=signer.name,
+            timestamp=now,
+            details=f"Client-side signed with key {req.fingerprint[:16]}...",
+        )
+    )
+
+    if doc.is_complete:
+        doc.status = DocumentStatus.COMPLETED
+        doc.completed_at = now
+        doc.audit_trail.append(
+            AuditEntry(
+                document_id=document_id,
+                action=AuditAction.COMPLETED,
+                timestamp=now,
+                details="All signers have signed.",
+            )
+        )
+    else:
+        doc.status = DocumentStatus.PARTIALLY_SIGNED
+
+    _store.save_document(doc)
     for entry in doc.audit_trail:
         _store.append_audit(entry)
 

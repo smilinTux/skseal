@@ -1,0 +1,38 @@
+{
+  "name": "@skseal/web",
+  "version": "0.1.0",
+  "description": "SKSeal client-side document signing with OpenPGP.js — keys never leave the browser",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openpgp": "^6.0.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.4"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "typescript": "^5.4",
+    "vitest": "^2.0",
+    "vue": "^3.4",
+    "@types/node": "^22"
+  },
+  "license": "MIT",
+  "author": "smilinTux.org <hello@smilintux.org>",
+  "repository": {
+    "type": "git",
+    "directory": "skseal/web"
+  }
+}
