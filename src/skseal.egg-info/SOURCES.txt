@@ -3,6 +3,7 @@ src/skseal/__init__.py
 src/skseal/api.py
 src/skseal/cli.py
 src/skseal/engine.py
+src/skseal/mcp_server.py
 src/skseal/models.py
 src/skseal/store.py
 src/skseal.egg-info/PKG-INFO
