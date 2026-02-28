@@ -49,6 +49,10 @@ export type { SealClientOptions } from "./client.js";
 export { SigningSession } from "./signing-session.js";
 export type { SigningSessionOptions } from "./signing-session.js";
 
+// Vue components
+export { default as TemplateBuilder } from "./components/TemplateBuilder.vue";
+export { default as SigningView } from "./components/SigningView.vue";
+
 // Types
 export type {
   FieldType,

@@ -30,8 +30,7 @@ export async function generateKeyPair(
   passphrase: string,
 ): Promise<KeyPair> {
   const { privateKey, publicKey } = await openpgp.generateKey({
-    type: "ecc",
-    curve: "curve25519",
+    type: "curve25519",
     userIDs: [{ name, email }],
     passphrase,
     format: "armored",

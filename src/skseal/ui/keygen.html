@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKSeal — Generate PGP Key</title>
+    <!--
+        OpenPGP.js 5.x UMD build — exposes window.openpgp
+        Key generation happens entirely in-browser. Private key is shown ONCE
+        and never transmitted. Download it before leaving this page.
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.2/dist/openpgp.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a1a;
+            --surface: rgba(255,255,255,0.03);
+            --border: rgba(59,130,246,0.15);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59,130,246,0.25);
+            --accent: #8b5cf6;
+            --text: #e5e7eb;
+            --muted: #6b7280;
+            --success: #34d399;
+            --success-bg: rgba(52,211,153,0.08);
+            --warning: #fbbf24;
+            --warning-bg: rgba(251,191,36,0.08);
+            --error: #f87171;
+            --error-bg: rgba(248,113,113,0.08);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: rgba(10,10,26,0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-brand { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        .header-sep { color: var(--muted); }
+        .header-title { font-size: 0.95rem; color: var(--muted); }
+
+        .page { max-width: 640px; margin: 0 auto; padding: 2rem; }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+
+        h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .lead { color: var(--muted); font-size: 0.95rem; margin-bottom: 0; }
+
+        label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
+        input[type="text"], input[type="password"], input[type="email"], select, textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+        textarea {
+            resize: vertical;
+            min-height: 160px;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.75rem;
+        }
+        .field-row { margin-bottom: 1rem; }
+        .field-hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+
+        /* Password strength */
+        .passphrase-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 480px) { .passphrase-row { grid-template-columns: 1fr; } }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+        .btn-primary:not(:disabled):hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: var(--primary); }
+        .btn-success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid rgba(52,211,153,0.4);
+        }
+        .btn-large {
+            padding: 0.9rem 2rem;
+            font-size: 1rem;
+            border-radius: 50px;
+            box-shadow: 0 6px 20px var(--primary-glow);
+        }
+        .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+        /* Status */
+        .status-bar {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+        }
+        .status-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+        .status-success { background: var(--success-bg); border: 1px solid rgba(52,211,153,0.3); color: var(--success); }
+        .status-warning { background: var(--warning-bg); border: 1px solid rgba(251,191,36,0.3); color: var(--warning); }
+        .status-error { background: var(--error-bg); border: 1px solid rgba(248,113,113,0.3); color: var(--error); }
+
+        /* Key output */
+        .hash-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.8rem;
+        }
+        .hash-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+        .hash-value { font-family: 'Fira Code', monospace; font-size: 0.8rem; color: #60a5fa; word-break: break-all; }
+
+        /* Warning banner */
+        .warning-banner {
+            background: var(--warning-bg);
+            border: 1px solid rgba(251,191,36,0.4);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            color: var(--warning);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-start;
+        }
+        .warning-icon { font-size: 1.3rem; flex-shrink: 0; }
+
+        .text-muted { color: var(--muted); font-size: 0.85rem; }
+        .link { color: var(--primary); text-decoration: none; }
+        .link:hover { text-decoration: underline; }
+
+        /* Key type picker */
+        .key-type-row { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+        .type-option {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+            background: rgba(255,255,255,0.02);
+        }
+        .type-option.selected {
+            border-color: var(--primary);
+            background: rgba(59,130,246,0.08);
+            color: var(--primary);
+        }
+        .type-option .type-name { font-weight: 700; font-size: 0.9rem; }
+        .type-option .type-desc { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+        .type-option.selected .type-desc { color: #93c5fd; }
+
+        /* Spinner */
+        .spinner {
+            width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <span class="header-brand">🔏 SKSeal</span>
+    <span class="header-sep">/</span>
+    <span class="header-title">Generate PGP Key</span>
+</header>
+
+<main class="page">
+
+    <!-- Intro -->
+    <div style="margin-bottom:1.5rem">
+        <h1>Generate Your Key Pair</h1>
+        <p class="lead">
+            All cryptography happens in your browser. Your private key is never sent anywhere.
+            Download it and keep it safe — this is your sovereign identity.
+        </p>
+    </div>
+
+    <!-- Form -->
+    <div class="card" id="form-card">
+        <div class="card-title">Identity</div>
+
+        <div class="field-row">
+            <label for="name">Full Name *</label>
+            <input type="text" id="name" placeholder="Alice Sovereign" autocomplete="name">
+        </div>
+        <div class="field-row">
+            <label for="email">Email Address *</label>
+            <input type="email" id="email" placeholder="alice@example.com" autocomplete="email">
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
+        <div class="card-title">Key Type</div>
+
+        <div class="key-type-row">
+            <div class="type-option selected" id="type-ecc" onclick="selectType('ecc')">
+                <div class="type-name">ECC Curve25519</div>
+                <div class="type-desc">Modern, fast, secure. Recommended.</div>
+            </div>
+            <div class="type-option" id="type-rsa" onclick="selectType('rsa')">
+                <div class="type-name">RSA 4096</div>
+                <div class="type-desc">Maximum compatibility with older clients.</div>
+            </div>
+        </div>
+        <input type="hidden" id="key-type" value="ecc">
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
+        <div class="card-title">Passphrase (optional but recommended)</div>
+
+        <div class="passphrase-row">
+            <div class="field-row" style="margin:0">
+                <label for="passphrase">Passphrase</label>
+                <input type="password" id="passphrase" placeholder="Strong passphrase" autocomplete="new-password">
+            </div>
+            <div class="field-row" style="margin:0">
+                <label for="passphrase-confirm">Confirm</label>
+                <input type="password" id="passphrase-confirm" placeholder="Repeat passphrase" autocomplete="new-password">
+            </div>
+        </div>
+        <p class="field-hint">
+            A passphrase protects your private key if someone obtains the file.
+            Leave blank for an unencrypted key (only safe if stored securely).
+        </p>
+
+        <div style="margin-top:1.2rem" class="btn-row">
+            <button id="gen-btn" class="btn btn-primary btn-large" onclick="generateKey()">
+                ✨ Generate Key Pair
+            </button>
+        </div>
+
+        <div id="gen-status" hidden class="status-bar"></div>
+    </div>
+
+    <!-- Result (shown after generation) -->
+    <div class="card" id="result-card" hidden>
+        <div class="card-title">Your New Key Pair</div>
+
+        <div class="warning-banner">
+            <div class="warning-icon">⚠️</div>
+            <div>
+                <strong>Download your private key now.</strong> It will not be shown again after you leave this page.
+                Keep it safe — it is your sovereign identity and cannot be recovered if lost.
+            </div>
+        </div>
+
+        <div class="hash-box">
+            <div class="hash-label">Fingerprint</div>
+            <div class="hash-value" id="result-fp" style="font-size:1rem;color:var(--success)"></div>
+        </div>
+
+        <div class="hash-box">
+            <div class="hash-label">Key UID</div>
+            <div class="hash-value" id="result-uid" style="color:var(--text)"></div>
+        </div>
+
+        <div class="btn-row" style="margin-bottom:1rem">
+            <a id="download-btn" class="btn btn-success" href="#" download="">
+                ⬇ Download Private Key (.asc)
+            </a>
+            <button class="btn btn-secondary" onclick="copyPrivateKey()">Copy Private Key</button>
+        </div>
+
+        <div class="field-row">
+            <label>Public Key (safe to share)</label>
+            <textarea id="result-pubkey" readonly onclick="this.select()"></textarea>
+        </div>
+        <div class="btn-row" style="margin-bottom:1rem">
+            <button class="btn btn-secondary" onclick="copyPublicKey()">Copy Public Key</button>
+        </div>
+
+        <p class="text-muted" style="margin-bottom:1.2rem">
+            Share your <strong>public key</strong> with anyone who needs to verify your signatures.
+            <strong>Never share your private key</strong> — guard it like a password.
+        </p>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:1rem 0">
+
+        <p class="text-muted" style="margin-bottom:0.8rem">Ready to sign a document?</p>
+        <a id="sign-link" href="sign.html" class="btn btn-primary">
+            → Go to Signing Page
+        </a>
+    </div>
+
+    <!-- Navigation -->
+    <div style="text-align:center;margin-top:1rem">
+        <a href="sign.html" class="link">← Back to Sign Document</a>
+    </div>
+
+</main>
+
+<script>
+let generatedPrivateKeyArmor = '';
+let generatedPublicKeyArmor = '';
+let selectedKeyType = 'ecc';
+
+function selectType(type) {
+    selectedKeyType = type;
+    document.getElementById('type-ecc').classList.toggle('selected', type === 'ecc');
+    document.getElementById('type-rsa').classList.toggle('selected', type === 'rsa');
+    document.getElementById('key-type').value = type;
+}
+
+async function generateKey() {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const passphrase = document.getElementById('passphrase').value;
+    const confirm = document.getElementById('passphrase-confirm').value;
+
+    if (!name || !email) {
+        setStatus('Name and email are required.', 'error');
+        return;
+    }
+    if (passphrase !== confirm) {
+        setStatus('Passphrases do not match.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('gen-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating…';
+    setStatus('Generating key pair in browser — this may take a few seconds…', 'info');
+
+    try {
+        const genOpts = {
+            userIDs: [{ name, email }],
+            format: 'armored',
+        };
+
+        if (selectedKeyType === 'ecc') {
+            genOpts.type = 'ecc';
+            genOpts.curve = 'curve25519';
+        } else {
+            genOpts.type = 'rsa';
+            genOpts.rsaBits = 4096;
+        }
+
+        if (passphrase) {
+            genOpts.passphrase = passphrase;
+        }
+
+        const { privateKey, publicKey } = await openpgp.generateKey(genOpts);
+
+        generatedPrivateKeyArmor = privateKey;
+        generatedPublicKeyArmor = publicKey;
+
+        // Get fingerprint
+        const pubKeyObj = await openpgp.readPublicKey({ armoredKey: publicKey });
+        const fp = pubKeyObj.getFingerprint().toUpperCase();
+
+        // Populate result section
+        document.getElementById('result-fp').textContent = formatFP(fp);
+        document.getElementById('result-uid').textContent = `${name} <${email}>`;
+        document.getElementById('result-pubkey').value = publicKey;
+
+        // Download link
+        const blob = new Blob([privateKey], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const dlBtn = document.getElementById('download-btn');
+        dlBtn.href = url;
+        dlBtn.download = `skseal-key-${fp.slice(-8).toLowerCase()}.asc`;
+
+        // Update sign link to carry fingerprint context
+        const params = new URLSearchParams(window.location.search);
+        const doc = params.get('doc');
+        const signer = params.get('signer');
+        let signUrl = 'sign.html';
+        if (doc) signUrl += `?doc=${doc}${signer ? '&signer=' + signer : ''}`;
+        document.getElementById('sign-link').href = signUrl;
+
+        // Show result
+        document.getElementById('result-card').hidden = false;
+        document.getElementById('result-card').scrollIntoView({ behavior: 'smooth' });
+
+        setStatus('Key pair generated. Download your private key before leaving this page.', 'warning');
+    } catch (e) {
+        setStatus(`Generation failed: ${e.message}`, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '✨ Regenerate';
+    }
+}
+
+function copyPrivateKey() {
+    if (!generatedPrivateKeyArmor) return;
+    navigator.clipboard.writeText(generatedPrivateKeyArmor).then(() => {
+        setStatus('Private key copied to clipboard. Paste it somewhere safe immediately.', 'warning');
+    });
+}
+
+function copyPublicKey() {
+    if (!generatedPublicKeyArmor) return;
+    navigator.clipboard.writeText(generatedPublicKeyArmor).then(() => {
+        setStatus('Public key copied to clipboard.', 'success');
+    });
+}
+
+function setStatus(msg, type = 'info') {
+    const el = document.getElementById('gen-status');
+    const icons = { info: 'ℹ️', success: '✓', warning: '⚠️', error: '✗' };
+    el.textContent = `${icons[type] || ''} ${msg}`;
+    el.className = `status-bar status-${type}`;
+    el.hidden = false;
+}
+
+function formatFP(fp) {
+    return (fp.match(/.{4}/g) || [fp]).join(' ');
+}
+</script>
+
+</body>
+</html>

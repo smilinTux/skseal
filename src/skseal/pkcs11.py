@@ -325,8 +325,8 @@ def sign_with_token(
     finally:
         try:
             session.logout()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Token logout failed (harmless): %s", exc)
         session.closeSession()
 
 
@@ -411,8 +411,8 @@ def get_public_key_der(
     finally:
         try:
             session.logout()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Token logout failed (harmless): %s", exc)
         session.closeSession()
 
 

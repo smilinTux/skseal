@@ -5,14 +5,18 @@ agent (Cursor, Claude Code, Claude Desktop, Windsurf, Cline…) can
 orchestrate the full PGP-backed signing lifecycle via tool calls.
 
 Tools:
-    list_templates      — List available document templates
-    create_document     — Create a new document from a template
-    list_documents      — List all documents with optional status filter
-    sign_document       — Apply a PGP signature to a document
-    verify_document     — Verify all signatures on a document
-    seal_document       — Finalize a fully-signed document with tamper-evident seal
-    get_audit_trail     — Get the full audit history for a document
-    store_public_key    — Import a signer's public PGP key
+    list_templates            — List available document templates
+    create_document           — Create a new document from a template
+    list_documents            — List all documents with optional status filter
+    sign_document             — Apply a PGP signature to a document
+    verify_document           — Verify all signatures on a document
+    seal_document             — Finalize a fully-signed document with tamper-evident seal
+    get_audit_trail           — Get the full audit history for a document
+    store_public_key          — Import a signer's public PGP key
+    send_signing_request_p2p  — Send a signing request via SKComm P2P transport
+    check_signing_inbox       — Poll SKComm inbox for signing requests/responses
+    respond_to_signing_request — Sign a received P2P request and return the signature via SKComm
+    apply_signing_responses   — Apply all pending P2P signing responses to documents
 
 Invocation (all equivalent):
     python -m skseal.mcp_server
@@ -403,6 +407,127 @@ async def list_tools() -> list[Tool]:
                 "required": ["document_id", "signer_fingerprint", "pin"],
             },
         ),
+        # ── P2P signing via SKComm ──────────────────────────────────────
+        Tool(
+            name="send_signing_request_p2p",
+            description=(
+                "Send a signing request to a peer via SKComm P2P transport. "
+                "Delivers the document hash and signer details directly to the signer's "
+                "agent — no centralized server involved. "
+                "The signer receives a SIGNING_REQUEST envelope and signs locally."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "ID of the document that requires a signature.",
+                    },
+                    "signer_fingerprint": {
+                        "type": "string",
+                        "description": "PGP fingerprint of the intended signer (recipient).",
+                    },
+                    "sender_fingerprint": {
+                        "type": "string",
+                        "description": "PGP fingerprint of the sender/requestor (optional; uses identity default).",
+                    },
+                    "expire_seconds": {
+                        "type": "integer",
+                        "description": "Seconds until the request expires (default: 86400 / 24 h).",
+                    },
+                },
+                "required": ["document_id", "signer_fingerprint"],
+            },
+        ),
+        Tool(
+            name="check_signing_inbox",
+            description=(
+                "Poll the SKComm inbox for incoming signing requests (SIGNING_REQUEST) "
+                "and signing responses (SIGNING_RESPONSE). "
+                "Returns both types so the caller can sign pending requests or apply "
+                "received signatures to documents."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "message_type": {
+                        "type": "string",
+                        "enum": ["requests", "responses", "both"],
+                        "description": "Which message type to poll for (default: both).",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="respond_to_signing_request",
+            description=(
+                "Sign a P2P signing request with the local PGP key and deliver "
+                "the signature back to the requestor via SKComm. "
+                "The private key never leaves this machine — only the document hash "
+                "and resulting signature travel over the transport."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "description": "request_id from the SIGNING_REQUEST payload.",
+                    },
+                    "document_id": {
+                        "type": "string",
+                        "description": "document_id from the SIGNING_REQUEST payload.",
+                    },
+                    "document_hash": {
+                        "type": "string",
+                        "description": "SHA-256 hash from the SIGNING_REQUEST payload.",
+                    },
+                    "signer_id": {
+                        "type": "string",
+                        "description": "signer_id from the SIGNING_REQUEST payload.",
+                    },
+                    "sender_fingerprint": {
+                        "type": "string",
+                        "description": "sender_fingerprint from the SIGNING_REQUEST payload (who to reply to).",
+                    },
+                    "private_key_path": {
+                        "type": "string",
+                        "description": "Absolute path to the ASCII-armored PGP private key file.",
+                    },
+                    "passphrase": {
+                        "type": "string",
+                        "description": "Passphrase to unlock the private key (use '' if unprotected).",
+                    },
+                    "field_values": {
+                        "type": "object",
+                        "description": "Field name → value map for form fields assigned to this signer.",
+                    },
+                },
+                "required": [
+                    "request_id", "document_id", "document_hash",
+                    "signer_id", "sender_fingerprint",
+                    "private_key_path", "passphrase",
+                ],
+            },
+        ),
+        Tool(
+            name="apply_signing_responses",
+            description=(
+                "Poll the SKComm inbox for SIGNING_RESPONSE envelopes and apply any "
+                "received signatures to the corresponding documents. "
+                "Returns a list of application results per response."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "verify": {
+                        "type": "boolean",
+                        "description": "Whether to verify the signature before applying (default: true).",
+                    },
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -436,6 +561,10 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         "timestamp_info": _handle_timestamp_info,
         "list_hardware_tokens": _handle_list_hardware_tokens,
         "sign_with_hardware_token": _handle_sign_with_hardware_token,
+        "send_signing_request_p2p": _handle_send_signing_request_p2p,
+        "check_signing_inbox": _handle_check_signing_inbox,
+        "respond_to_signing_request": _handle_respond_to_signing_request,
+        "apply_signing_responses": _handle_apply_signing_responses,
     }
     handler = handlers.get(name)
     if handler is None:
@@ -1084,6 +1213,213 @@ async def _handle_sign_with_hardware_token(args: dict) -> list[TextContent]:
         "signed_at": last_record.signed_at.isoformat() if last_record else None,
         "document_status": document.status.value,
     })
+
+
+# ─────────────────────────────────────────────────────────────
+# P2P Signing Tool Handlers (SKComm transport)
+# ─────────────────────────────────────────────────────────────
+
+
+def _get_skcomm():
+    """Initialise an SKComm instance from the default config.
+
+    Returns:
+        SKComm instance, or None if skcomm is not installed/configured.
+    """
+    try:
+        from skcomm import SKComm
+        return SKComm.from_config()
+    except Exception as exc:
+        logger.warning("SKComm unavailable: %s", exc)
+        return None
+
+
+async def _handle_send_signing_request_p2p(args: dict) -> list[TextContent]:
+    """Send a SIGNING_REQUEST to a peer via SKComm P2P transport.
+
+    Args:
+        args: document_id, signer_fingerprint, optional sender_fingerprint,
+              optional expire_seconds.
+
+    Returns:
+        JSON {request_id, delivered, transport, error}.
+    """
+    from .skcomm_transport import SealSKCommTransport
+
+    document_id: str = args.get("document_id", "")
+    signer_fingerprint: str = args.get("signer_fingerprint", "")
+
+    if not document_id:
+        return _error("document_id is required")
+    if not signer_fingerprint:
+        return _error("signer_fingerprint is required")
+
+    skcomm = _get_skcomm()
+    if skcomm is None:
+        return _error(
+            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+        )
+
+    transport = SealSKCommTransport(
+        store=_store,
+        identity_fingerprint=args.get("sender_fingerprint", ""),
+    )
+
+    try:
+        result = transport.send_signing_request(
+            skcomm=skcomm,
+            document_id=document_id,
+            signer_fingerprint=signer_fingerprint,
+            sender_fingerprint=args.get("sender_fingerprint") or None,
+            expire_seconds=int(args.get("expire_seconds", 86400)),
+        )
+    except FileNotFoundError:
+        return _error(f"Document not found: {document_id}")
+    except ValueError as exc:
+        return _error(str(exc))
+
+    return _json(result)
+
+
+async def _handle_check_signing_inbox(args: dict) -> list[TextContent]:
+    """Poll SKComm inbox for SIGNING_REQUEST and/or SIGNING_RESPONSE envelopes.
+
+    Args:
+        args: Optional message_type ("requests" | "responses" | "both").
+
+    Returns:
+        JSON {requests: [...], responses: [...]}.
+    """
+    from .skcomm_transport import SealSKCommTransport
+
+    message_type: str = args.get("message_type", "both")
+
+    skcomm = _get_skcomm()
+    if skcomm is None:
+        return _error(
+            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+        )
+
+    transport = SealSKCommTransport(store=_store)
+
+    # We need to receive envelopes once and split by type to avoid double-consuming.
+    # Use lower-level receive and filter manually.
+    requests_list = []
+    responses_list = []
+
+    try:
+        from skcomm.models import MessageType
+
+        envelopes = skcomm.receive()
+        import json as _json_mod
+
+        for env in envelopes:
+            try:
+                ct = env.payload.content_type
+                payload = _json_mod.loads(env.payload.content)
+                payload["_envelope_id"] = env.envelope_id
+                payload["_sender"] = env.sender
+
+                if ct == MessageType.SIGNING_REQUEST:
+                    requests_list.append(payload)
+                elif ct == MessageType.SIGNING_RESPONSE:
+                    responses_list.append(payload)
+            except Exception:
+                continue
+    except Exception as exc:
+        return _error(f"Failed to poll SKComm inbox: {exc}")
+
+    result: dict = {}
+    if message_type in ("requests", "both"):
+        result["requests"] = requests_list
+    if message_type in ("responses", "both"):
+        result["responses"] = responses_list
+
+    result["total"] = len(requests_list) + len(responses_list)
+    return _json(result)
+
+
+async def _handle_respond_to_signing_request(args: dict) -> list[TextContent]:
+    """Sign a P2P signing request and deliver the signature via SKComm.
+
+    The private key is loaded from disk, used to sign the document hash,
+    and the key material never leaves this machine — only the hash and
+    signature travel over SKComm.
+
+    Args:
+        args: request_id, document_id, document_hash, signer_id,
+              sender_fingerprint, private_key_path, passphrase,
+              optional field_values.
+
+    Returns:
+        JSON {request_id, signed, signer_fingerprint, delivered, transport, error}.
+    """
+    from .skcomm_transport import SealSKCommTransport
+
+    required = ["request_id", "document_id", "document_hash",
+                "signer_id", "sender_fingerprint", "private_key_path", "passphrase"]
+    for field in required:
+        if not args.get(field) and field != "passphrase":
+            return _error(f"{field} is required")
+
+    private_key_path = Path(args["private_key_path"])
+    if not private_key_path.exists():
+        return _error(f"Private key file not found: {args['private_key_path']}")
+
+    private_key_armor = private_key_path.read_text(encoding="utf-8")
+    try:
+        pgpy.PGPKey.from_blob(private_key_armor)
+    except Exception as exc:
+        return _error(f"Failed to parse private key: {exc}")
+
+    skcomm = _get_skcomm()
+    if skcomm is None:
+        return _error(
+            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+        )
+
+    # Reconstruct the request_payload dict from individual args
+    request_payload = {
+        "request_id": args["request_id"],
+        "document_id": args["document_id"],
+        "document_hash": args["document_hash"],
+        "signer_id": args["signer_id"],
+        "sender_fingerprint": args["sender_fingerprint"],
+    }
+
+    transport = SealSKCommTransport(store=_store)
+    result = transport.respond_to_signing_request(
+        skcomm=skcomm,
+        request_payload=request_payload,
+        private_key_armor=private_key_armor,
+        passphrase=args.get("passphrase", ""),
+        field_values=args.get("field_values"),
+    )
+    return _json(result)
+
+
+async def _handle_apply_signing_responses(args: dict) -> list[TextContent]:
+    """Poll for SIGNING_RESPONSE envelopes and apply them to documents.
+
+    Args:
+        args: Optional verify (bool, default True).
+
+    Returns:
+        JSON list of {request_id, document_id, applied, document_status, error}.
+    """
+    from .skcomm_transport import SealSKCommTransport
+
+    verify: bool = args.get("verify", True)
+
+    skcomm = _get_skcomm()
+    if skcomm is None:
+        return _error(
+            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+        )
+
+    transport = SealSKCommTransport(store=_store)
+    results = transport.poll_and_apply_responses(skcomm, verify=verify)
+    return _json(results)
 
 
 # ─────────────────────────────────────────────────────────────

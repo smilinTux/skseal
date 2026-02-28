@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKSeal — Sign Document</title>
+    <!--
+        OpenPGP.js 5.x UMD build — exposes window.openpgp
+        Private key NEVER leaves the browser. Only the signature is sent to the server.
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.2/dist/openpgp.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a1a;
+            --surface: rgba(255,255,255,0.03);
+            --border: rgba(59,130,246,0.15);
+            --primary: #3b82f6;
+            --primary-glow: rgba(59,130,246,0.25);
+            --accent: #8b5cf6;
+            --text: #e5e7eb;
+            --muted: #6b7280;
+            --success: #34d399;
+            --success-bg: rgba(52,211,153,0.08);
+            --warning: #fbbf24;
+            --warning-bg: rgba(251,191,36,0.08);
+            --error: #f87171;
+            --error-bg: rgba(248,113,113,0.08);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(10,10,26,0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-brand { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+        .header-sep { color: var(--muted); }
+        .header-title { font-size: 0.95rem; color: var(--muted); }
+
+        /* Layout */
+        .page { max-width: 960px; margin: 0 auto; padding: 2rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 0.8rem;
+        }
+
+        /* Document info */
+        .doc-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .doc-description { color: var(--muted); font-size: 0.95rem; margin-bottom: 1rem; }
+        .doc-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .doc-status.pending { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(251,191,36,0.3); }
+        .doc-status.partially_signed { background: rgba(139,92,246,0.1); color: var(--accent); border: 1px solid rgba(139,92,246,0.3); }
+        .doc-status.completed { background: var(--success-bg); color: var(--success); border: 1px solid rgba(52,211,153,0.3); }
+        .doc-status.draft { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+
+        /* Hash display */
+        .hash-box {
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-top: 0.8rem;
+        }
+        .hash-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.3rem;
+        }
+        .hash-value {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #60a5fa;
+            word-break: break-all;
+        }
+        .hash-verified { color: var(--success); font-size: 0.78rem; margin-top: 0.3rem; }
+
+        /* PDF Preview */
+        .pdf-preview {
+            width: 100%;
+            height: 500px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #111;
+        }
+        .pdf-fallback {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 200px;
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            color: var(--muted);
+            gap: 0.5rem;
+        }
+        .pdf-fallback a { color: var(--primary); }
+
+        /* Signers */
+        .signer-list { display: flex; flex-direction: column; gap: 0.6rem; }
+        .signer-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+        }
+        .signer-item.is-you { border-color: var(--primary); background: rgba(59,130,246,0.05); }
+        .signer-name { font-weight: 600; font-size: 0.9rem; }
+        .signer-role { font-size: 0.78rem; color: var(--muted); }
+        .signer-badge {
+            font-size: 0.72rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        .badge-signed { background: var(--success-bg); color: var(--success); }
+        .badge-pending { background: var(--warning-bg); color: var(--warning); }
+        .badge-you { background: rgba(59,130,246,0.15); color: var(--primary); }
+
+        /* Form controls */
+        label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.3rem; }
+        input[type="text"], input[type="password"], input[type="email"],
+        input[type="date"], input[type="number"], select, textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus { border-color: var(--primary); }
+        textarea { resize: vertical; min-height: 120px; font-family: 'Fira Code', monospace; font-size: 0.8rem; }
+        input[type="checkbox"] { width: auto; margin-right: 0.5rem; accent-color: var(--primary); }
+
+        .field-row { margin-bottom: 1rem; }
+        .field-note { font-size: 0.8rem; color: var(--accent); font-style: italic; padding: 0.4rem 0; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: #fff;
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+        .btn-primary:not(:disabled):hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px var(--primary-glow);
+            filter: brightness(1.1);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); border-color: var(--primary); }
+        .btn-large {
+            padding: 0.9rem 2rem;
+            font-size: 1rem;
+            border-radius: 50px;
+            box-shadow: 0 6px 20px var(--primary-glow);
+        }
+
+        .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+
+        /* Key info */
+        .key-info {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            padding: 0.8rem;
+            background: var(--success-bg);
+            border: 1px solid rgba(52,211,153,0.3);
+            border-radius: 8px;
+            margin-top: 0.8rem;
+        }
+        .key-icon { font-size: 1.5rem; }
+        .key-details { flex: 1; }
+        .key-fingerprint {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.78rem;
+            color: var(--success);
+            word-break: break-all;
+        }
+        .key-uid { font-size: 0.85rem; color: var(--text); margin-bottom: 0.2rem; }
+
+        /* Status messages */
+        .status-bar {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status-info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; }
+        .status-success { background: var(--success-bg); border: 1px solid rgba(52,211,153,0.3); color: var(--success); }
+        .status-warning { background: var(--warning-bg); border: 1px solid rgba(251,191,36,0.3); color: var(--warning); }
+        .status-error { background: var(--error-bg); border: 1px solid rgba(248,113,113,0.3); color: var(--error); }
+
+        /* Loading + Error screens */
+        .full-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: center;
+            gap: 1rem;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Success screen */
+        .success-screen {
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+        .success-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .success-title { font-size: 1.6rem; font-weight: 800; color: var(--success); margin-bottom: 0.5rem; }
+        .success-detail { color: var(--muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+
+        /* Confirm area */
+        .confirm-label {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text);
+            margin-bottom: 1rem;
+        }
+        .confirm-label input { margin-top: 0.2rem; }
+
+        /* Divider */
+        .section-gap { margin-top: 1.5rem; }
+
+        /* Utility */
+        .monospace { font-family: 'Fira Code', monospace; }
+        .text-muted { color: var(--muted); font-size: 0.85rem; }
+        .link { color: var(--primary); text-decoration: none; }
+        .link:hover { text-decoration: underline; }
+        hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+    <span class="header-brand">🔏 SKSeal</span>
+    <span class="header-sep">/</span>
+    <span class="header-title">Sign Document</span>
+</header>
+
+<!-- Loading state -->
+<div id="loading-screen" class="full-screen">
+    <div class="spinner"></div>
+    <p class="text-muted">Loading document&hellip;</p>
+</div>
+
+<!-- Error state -->
+<div id="error-screen" class="full-screen" hidden>
+    <div style="font-size:3rem">⚠️</div>
+    <h2 style="color:var(--error)">Unable to Load Document</h2>
+    <p id="error-msg" class="text-muted"></p>
+</div>
+
+<!-- Success state -->
+<div id="success-screen" class="full-screen" hidden>
+    <div class="success-icon">✅</div>
+    <h2 class="success-title">Document Signed</h2>
+    <p class="success-detail">Your sovereign signature has been recorded.</p>
+    <div class="card" style="max-width:540px;text-align:left">
+        <div class="card-title">Signature Details</div>
+        <div class="hash-box">
+            <div class="hash-label">Your Fingerprint</div>
+            <div class="hash-value" id="success-fp"></div>
+        </div>
+        <div class="hash-box" style="margin-top:0.6rem">
+            <div class="hash-label">Document Hash (SHA-256)</div>
+            <div class="hash-value" id="success-hash"></div>
+        </div>
+        <p class="text-muted" style="margin-top:1rem;font-size:0.82rem">
+            Your PGP signature over the document hash proves you approved this exact version.
+            No private key was ever transmitted. Only the signature was sent to the server.
+        </p>
+    </div>
+    <a href="javascript:history.back()" class="btn btn-secondary" style="margin-top:1rem">← Back</a>
+</div>
+
+<!-- Main page (shown after document loads) -->
+<div id="main-page" class="page" hidden>
+
+    <!-- 1. Document info -->
+    <div class="card section-gap">
+        <div class="card-title">Document</div>
+        <h1 class="doc-title" id="doc-title"></h1>
+        <p class="doc-description" id="doc-description"></p>
+        <span class="doc-status" id="doc-status-badge"></span>
+
+        <div class="hash-box">
+            <div class="hash-label">Document Hash (SHA-256) — this is what you are signing</div>
+            <div class="hash-value" id="doc-hash"></div>
+            <div id="hash-verified-msg" class="hash-verified" hidden>
+                ✓ Hash independently verified against the PDF in your browser
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. PDF preview + Signers -->
+    <div class="grid section-gap">
+
+        <!-- PDF Preview -->
+        <div class="card">
+            <div class="card-title">Document Preview</div>
+            <div id="pdf-container">
+                <div class="pdf-fallback" id="pdf-fallback">
+                    <span style="font-size:2rem">📄</span>
+                    <span>No PDF attached</span>
+                </div>
+                <iframe class="pdf-preview" id="pdf-frame" hidden
+                    title="Document PDF"></iframe>
+            </div>
+            <p class="text-muted" style="margin-top:0.6rem;font-size:0.8rem">
+                Review carefully before signing.
+                <a id="pdf-download-link" class="link" href="#" target="_blank" hidden>Open PDF in new tab →</a>
+            </p>
+        </div>
+
+        <!-- Signers -->
+        <div class="card">
+            <div class="card-title">Signers</div>
+            <div class="signer-list" id="signer-list"></div>
+
+            <div class="field-row section-gap">
+                <label for="signer-select">You are signing as</label>
+                <select id="signer-select">
+                    <option value="">— select —</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. PGP Key Import -->
+    <div class="card section-gap">
+        <div class="card-title">Your PGP Key</div>
+        <p class="text-muted" style="margin-bottom:1rem">
+            Your private key never leaves this browser.
+            Only your signature (not your key) is sent to the server.
+        </p>
+
+        <div class="field-row">
+            <label for="key-textarea">PGP Private Key</label>
+            <textarea id="key-textarea"
+                placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----&#10;&#10;Paste your ASCII-armored private key here, or use the file button below.&#10;&#10;-----END PGP PRIVATE KEY BLOCK-----"></textarea>
+        </div>
+
+        <div class="field-row">
+            <label for="passphrase">Passphrase (if key is encrypted)</label>
+            <input type="password" id="passphrase" placeholder="Leave blank if key has no passphrase" autocomplete="current-password">
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-secondary" onclick="document.getElementById('key-file-input').click()">
+                📁 Load from File
+            </button>
+            <input type="file" id="key-file-input" accept=".asc,.pgp,.gpg,text/plain" hidden>
+            <button class="btn btn-secondary" onclick="loadKey()">🔑 Load Key</button>
+            <a href="keygen.html" class="link" style="font-size:0.85rem;margin-left:auto">
+                No key? Generate one →
+            </a>
+        </div>
+
+        <!-- Key info (shown after successful load) -->
+        <div id="key-info" class="key-info" hidden>
+            <div class="key-icon">🔐</div>
+            <div class="key-details">
+                <div class="key-uid" id="key-uid"></div>
+                <div class="hash-label" style="margin-top:0.2rem">Fingerprint</div>
+                <div class="key-fingerprint" id="key-fingerprint"></div>
+            </div>
+            <div style="color:var(--success);font-size:1.2rem">✓</div>
+        </div>
+    </div>
+
+    <!-- 4. Fields -->
+    <div class="card section-gap" id="fields-card">
+        <div class="card-title">Fill In Your Fields</div>
+        <div id="fields-container">
+            <p class="text-muted">Select your signer to see required fields.</p>
+        </div>
+    </div>
+
+    <!-- 5. Sign action -->
+    <div class="card section-gap" id="sign-card">
+        <div class="card-title">Sign</div>
+
+        <label class="confirm-label">
+            <input type="checkbox" id="confirm-check" onchange="updateSignButton()">
+            <span>I have reviewed the document above and the hash below. I agree to sign this document with my PGP key.</span>
+        </label>
+
+        <div class="hash-box" style="margin-bottom:1rem">
+            <div class="hash-label">I am signing this SHA-256 hash</div>
+            <div class="hash-value" id="sign-hash-preview">—</div>
+        </div>
+
+        <div class="btn-row">
+            <button id="sign-btn" class="btn btn-primary btn-large" onclick="signDocument()" disabled>
+                🔏 Sign Document
+            </button>
+        </div>
+
+        <div id="status-bar" hidden class="status-bar" style="margin-top:1rem"></div>
+    </div>
+
+</div><!-- /#main-page -->
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let docData = null;       // Full document object from API
+let privateKey = null;    // Loaded + decrypted openpgp PrivateKey
+let publicKeyArmor = '';  // Armored public key (to register on server)
+let signerFingerprint = '';
+let selectedSignerId = new URLSearchParams(location.search).get('signer') || '';
+const DOC_ID = new URLSearchParams(location.search).get('doc');
+
+// ============================================================
+// Boot
+// ============================================================
+document.addEventListener('DOMContentLoaded', init);
+
+async function init() {
+    if (!DOC_ID) {
+        showError('No document ID in URL. Expected ?doc=&lt;document_id&gt;');
+        return;
+    }
+    try {
+        docData = await apiFetch(`/api/documents/${DOC_ID}`);
+        buildPage();
+    } catch (e) {
+        showError(`Failed to load document: ${e.message}`);
+    }
+}
+
+function buildPage() {
+    // Document info
+    document.getElementById('doc-title').textContent = docData.title;
+    document.getElementById('doc-description').textContent = docData.description || '';
+
+    const badge = document.getElementById('doc-status-badge');
+    badge.textContent = docData.status.replace('_', ' ');
+    badge.className = `doc-status ${docData.status}`;
+
+    // Hash display
+    const hash = docData.pdf_hash || '';
+    document.getElementById('doc-hash').textContent = hash || '(no PDF attached)';
+    document.getElementById('sign-hash-preview').textContent = hash || '—';
+
+    // PDF preview
+    if (hash) {
+        const frame = document.getElementById('pdf-frame');
+        frame.src = `/api/documents/${DOC_ID}/pdf`;
+        frame.hidden = false;
+        document.getElementById('pdf-fallback').hidden = true;
+
+        const dl = document.getElementById('pdf-download-link');
+        dl.href = `/api/documents/${DOC_ID}/pdf`;
+        dl.hidden = false;
+
+        // Independently verify hash in browser
+        verifyHashInBrowser();
+    }
+
+    // Signers
+    buildSignerList();
+
+    // File input listener
+    document.getElementById('key-file-input').addEventListener('change', onFileSelect);
+
+    // Show page
+    document.getElementById('loading-screen').hidden = true;
+    document.getElementById('main-page').hidden = false;
+}
+
+// ============================================================
+// PDF hash verification in browser (Web Crypto)
+// ============================================================
+async function verifyHashInBrowser() {
+    try {
+        const resp = await fetch(`/api/documents/${DOC_ID}/pdf`);
+        if (!resp.ok) return;
+        const buf = await resp.arrayBuffer();
+        const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+        const hex = Array.from(new Uint8Array(hashBuf))
+            .map(b => b.toString(16).padStart(2, '0')).join('');
+        if (hex === docData.pdf_hash) {
+            document.getElementById('hash-verified-msg').hidden = false;
+        }
+    } catch (_) {
+        // Non-critical — verification best-effort
+    }
+}
+
+// ============================================================
+// Signers
+// ============================================================
+function buildSignerList() {
+    const list = document.getElementById('signer-list');
+    const sel = document.getElementById('signer-select');
+    list.innerHTML = '';
+
+    for (const s of (docData.signers || [])) {
+        // List item
+        const item = document.createElement('div');
+        item.className = 'signer-item';
+        item.id = `signer-row-${s.signer_id}`;
+
+        const info = document.createElement('div');
+        const nameEl = document.createElement('div');
+        nameEl.className = 'signer-name';
+        nameEl.textContent = s.name;
+        const roleEl = document.createElement('div');
+        roleEl.className = 'signer-role';
+        roleEl.textContent = s.role;
+        info.appendChild(nameEl);
+        info.appendChild(roleEl);
+
+        const badge = document.createElement('span');
+        badge.className = `signer-badge badge-${s.status}`;
+        badge.textContent = s.status;
+
+        item.appendChild(info);
+        item.appendChild(badge);
+        list.appendChild(item);
+
+        // Dropdown option (pending only)
+        if (s.status === 'pending') {
+            const opt = document.createElement('option');
+            opt.value = s.signer_id;
+            opt.textContent = `${s.name} (${s.role})`;
+            sel.appendChild(opt);
+        }
+    }
+
+    // Pre-select from URL param
+    if (selectedSignerId) {
+        sel.value = selectedSignerId;
+        highlightSigner(selectedSignerId);
+        renderFields(selectedSignerId);
+    } else {
+        // Auto-select if only one pending
+        const pending = (docData.signers || []).filter(s => s.status === 'pending');
+        if (pending.length === 1) {
+            selectedSignerId = pending[0].signer_id;
+            sel.value = selectedSignerId;
+            highlightSigner(selectedSignerId);
+            renderFields(selectedSignerId);
+        }
+    }
+
+    sel.addEventListener('change', () => {
+        selectedSignerId = sel.value;
+        highlightSigner(selectedSignerId);
+        renderFields(selectedSignerId);
+        updateSignButton();
+    });
+}
+
+function highlightSigner(signerId) {
+    document.querySelectorAll('.signer-item').forEach(el => el.classList.remove('is-you'));
+    if (signerId) {
+        const el = document.getElementById(`signer-row-${signerId}`);
+        if (el) el.classList.add('is-you');
+    }
+}
+
+// ============================================================
+// Fields
+// ============================================================
+function renderFields(signerId) {
+    const container = document.getElementById('fields-container');
+    container.innerHTML = '';
+
+    if (!signerId) {
+        container.innerHTML = '<p class="text-muted">Select your signer to see required fields.</p>';
+        return;
+    }
+
+    const signer = (docData.signers || []).find(s => s.signer_id === signerId);
+    if (!signer) return;
+
+    const role = signer.role;
+    const SKIP_TYPES = new Set(['heading', 'stamp', 'verification', 'kba', 'strikethrough']);
+    const fields = (docData.fields || []).filter(f =>
+        (f.role === role || f.role === 'Signer') && !SKIP_TYPES.has(f.type) && !f.readonly
+    );
+
+    if (fields.length === 0) {
+        container.innerHTML = '<p class="text-muted">No fillable fields for your role.</p>';
+        return;
+    }
+
+    for (const field of fields) {
+        const row = document.createElement('div');
+        row.className = 'field-row';
+
+        const lbl = document.createElement('label');
+        lbl.htmlFor = `f-${field.uuid}`;
+        lbl.textContent = field.name + (field.required ? ' *' : '');
+
+        let input;
+
+        if (field.type === 'signature' || field.type === 'pgp_signature' || field.type === 'initials') {
+            const note = document.createElement('div');
+            note.className = 'field-note';
+            note.textContent = field.type === 'initials'
+                ? 'Initials field — will be filled from your key UID.'
+                : 'Signature field — fulfilled by your PGP signature.';
+            row.appendChild(lbl);
+            row.appendChild(note);
+            container.appendChild(row);
+            continue;
+        }
+
+        if (field.type === 'checkbox') {
+            input = document.createElement('input');
+            input.type = 'checkbox';
+            input.id = `f-${field.uuid}`;
+            input.dataset.uuid = field.uuid;
+            input.dataset.name = field.name;
+            if (field.default_value === 'true') input.checked = true;
+        } else if (field.type === 'select' || field.type === 'multiple') {
+            input = document.createElement('select');
+            input.id = `f-${field.uuid}`;
+            input.dataset.uuid = field.uuid;
+            input.dataset.name = field.name;
+            for (const opt of (field.options || [])) {
+                const o = document.createElement('option');
+                o.value = opt; o.textContent = opt;
+                input.appendChild(o);
+            }
+        } else if (field.type === 'date' || field.type === 'datenow') {
+            input = document.createElement('input');
+            input.type = 'date';
+            input.id = `f-${field.uuid}`;
+            input.dataset.uuid = field.uuid;
+            input.dataset.name = field.name;
+            if (field.type === 'datenow') {
+                input.value = new Date().toISOString().slice(0, 10);
+                input.readOnly = true;
+            } else if (field.default_value) {
+                input.value = field.default_value;
+            }
+        } else if (field.type === 'number') {
+            input = document.createElement('input');
+            input.type = 'number';
+            input.id = `f-${field.uuid}`;
+            input.dataset.uuid = field.uuid;
+            input.dataset.name = field.name;
+            if (field.default_value) input.value = field.default_value;
+        } else {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.id = `f-${field.uuid}`;
+            input.dataset.uuid = field.uuid;
+            input.dataset.name = field.name;
+            if (field.default_value) input.value = field.default_value;
+        }
+
+        if (field.required && input) input.required = true;
+
+        row.appendChild(lbl);
+        row.appendChild(input);
+        container.appendChild(row);
+    }
+}
+
+function collectFieldValues() {
+    const vals = {};
+    document.querySelectorAll('[data-uuid]').forEach(el => {
+        const name = el.dataset.name;
+        vals[name] = el.type === 'checkbox' ? String(el.checked) : el.value;
+    });
+    return vals;
+}
+
+// ============================================================
+// Key import
+// ============================================================
+function onFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+        document.getElementById('key-textarea').value = ev.target.result.trim();
+    };
+    reader.readAsText(file);
+}
+
+async function loadKey() {
+    const armor = document.getElementById('key-textarea').value.trim();
+    const pass = document.getElementById('passphrase').value;
+
+    if (!armor) {
+        setStatus('Paste or load your PGP private key first.', 'warning');
+        return;
+    }
+
+    try {
+        setStatus('Parsing key…', 'info');
+        const rawKey = await openpgp.readPrivateKey({ armoredKey: armor });
+
+        let decrypted;
+        if (rawKey.isDecrypted()) {
+            decrypted = rawKey;
+        } else {
+            decrypted = await openpgp.decryptKey({ privateKey: rawKey, passphrase: pass });
+        }
+
+        privateKey = decrypted;
+        signerFingerprint = decrypted.getFingerprint().toUpperCase();
+        publicKeyArmor = decrypted.toPublic().armor();
+
+        // Display key info
+        const uid = (decrypted.users[0]?.userID?.userID) || 'Unknown UID';
+        document.getElementById('key-uid').textContent = uid;
+        document.getElementById('key-fingerprint').textContent = formatFP(signerFingerprint);
+        document.getElementById('key-info').hidden = false;
+
+        // Auto-match signer
+        if (!selectedSignerId) {
+            tryAutoMatchSigner();
+        }
+
+        updateSignButton();
+        setStatus('Key loaded. Your private key stays in this browser tab.', 'success');
+    } catch (e) {
+        privateKey = null;
+        signerFingerprint = '';
+        document.getElementById('key-info').hidden = true;
+        setStatus(`Key error: ${e.message}`, 'error');
+    }
+}
+
+function tryAutoMatchSigner() {
+    for (const s of (docData.signers || [])) {
+        if (s.fingerprint && s.fingerprint.toUpperCase() === signerFingerprint && s.status === 'pending') {
+            selectedSignerId = s.signer_id;
+            document.getElementById('signer-select').value = selectedSignerId;
+            highlightSigner(selectedSignerId);
+            renderFields(selectedSignerId);
+            break;
+        }
+    }
+}
+
+// ============================================================
+// Sign flow
+// ============================================================
+function updateSignButton() {
+    const ready = privateKey !== null
+        && selectedSignerId !== ''
+        && docData?.pdf_hash
+        && document.getElementById('confirm-check').checked;
+    document.getElementById('sign-btn').disabled = !ready;
+}
+
+async function signDocument() {
+    if (!privateKey) return setStatus('Load your PGP key first.', 'error');
+    if (!selectedSignerId) return setStatus('Select your signer.', 'error');
+    if (!docData.pdf_hash) return setStatus('No PDF hash available — ensure a PDF is attached.', 'error');
+
+    const hash = docData.pdf_hash;
+    document.getElementById('sign-btn').disabled = true;
+
+    try {
+        // Step 1: Register public key with server
+        setStatus('Registering public key with server…', 'info');
+        await registerPublicKey(signerFingerprint, publicKeyArmor);
+
+        // Step 2: Sign the document hash in browser using OpenPGP.js
+        // The hash (hex string) is the message content; private key never leaves the browser.
+        setStatus('Signing document hash…', 'info');
+        const message = await openpgp.createMessage({ text: hash });
+        const signedArmored = await openpgp.sign({
+            message,
+            signingKeys: privateKey,
+        });
+
+        // Step 3: Collect field values
+        const fieldValues = collectFieldValues();
+
+        // Step 4: Submit signature to server
+        setStatus('Submitting signature…', 'info');
+        await submitSignature(DOC_ID, {
+            signer_id: selectedSignerId,
+            signature_armor: signedArmored,
+            document_hash: hash,
+            fingerprint: signerFingerprint,
+            field_values: fieldValues,
+        });
+
+        // Done
+        document.getElementById('success-fp').textContent = formatFP(signerFingerprint);
+        document.getElementById('success-hash').textContent = hash;
+        document.getElementById('main-page').hidden = true;
+        document.getElementById('loading-screen').hidden = true;
+        document.getElementById('success-screen').hidden = false;
+
+    } catch (e) {
+        setStatus(`Error: ${e.message}`, 'error');
+        document.getElementById('sign-btn').disabled = false;
+    }
+}
+
+// ============================================================
+// API helpers
+// ============================================================
+async function apiFetch(url, opts = {}) {
+    const resp = await fetch(url, opts);
+    if (!resp.ok) {
+        let detail = `HTTP ${resp.status}`;
+        try { const j = await resp.json(); detail = j.detail || detail; } catch (_) {}
+        throw new Error(detail);
+    }
+    return resp.json();
+}
+
+async function registerPublicKey(fp, armor) {
+    return apiFetch('/api/keys/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fingerprint: fp, armor }),
+    });
+}
+
+async function submitSignature(docId, req) {
+    return apiFetch(`/api/documents/${docId}/sign-client`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req),
+    });
+}
+
+// ============================================================
+// UI helpers
+// ============================================================
+function setStatus(msg, type = 'info') {
+    const el = document.getElementById('status-bar');
+    const icons = { info: 'ℹ️', success: '✓', warning: '⚠️', error: '✗' };
+    el.textContent = `${icons[type] || ''} ${msg}`;
+    el.className = `status-bar status-${type}`;
+    el.hidden = false;
+}
+
+function showError(msg) {
+    document.getElementById('loading-screen').hidden = true;
+    document.getElementById('error-msg').innerHTML = msg;
+    document.getElementById('error-screen').hidden = false;
+}
+
+function formatFP(fp) {
+    return (fp.match(/.{4}/g) || [fp]).join(' ');
+}
+</script>
+</body>
+</html>

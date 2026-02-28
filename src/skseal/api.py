@@ -12,6 +12,7 @@ from typing import Optional
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .engine import SealEngine
@@ -98,6 +99,19 @@ class ClientSignRequest(BaseModel):
     document_hash: str
     fingerprint: str
     field_values: dict[str, str] = {}
+
+
+class RegisterKeyRequest(BaseModel):
+    """Request body for registering a signer's public key (JSON body variant).
+
+    Used by the browser-based OpenPGP.js signing flow. The browser generates
+    or imports a key locally, extracts the public component, and registers it
+    here so the server can verify the signature that follows. The private key
+    never leaves the browser.
+    """
+
+    fingerprint: str
+    armor: str  # ASCII-armored public key
 
 
 class SealRequest(BaseModel):
@@ -481,6 +495,21 @@ async def list_keys() -> list[str]:
     return _store.list_public_keys()
 
 
+@app.post("/api/keys/register", status_code=201)
+async def register_public_key(req: RegisterKeyRequest) -> dict:
+    """Register a signer's public key via JSON body.
+
+    This is the endpoint used by the browser-based OpenPGP.js signing flow.
+    Call this before submitting a client-side signature so the server can
+    verify the signature with the signer's public key.
+
+    The private key NEVER leaves the browser — only the public component is
+    sent here so the server can store it for later verification.
+    """
+    _store.store_public_key(req.fingerprint, req.armor)
+    return {"fingerprint": req.fingerprint, "stored": True}
+
+
 # ---------------------------------------------------------------------------
 # Timestamp endpoints (RFC 3161)
 # ---------------------------------------------------------------------------
@@ -636,3 +665,21 @@ async def health() -> dict:
         "service": "skseal",
         "version": "0.1.0",
     }
+
+
+# ---------------------------------------------------------------------------
+# Browser signing UI (OpenPGP.js client-side)
+# ---------------------------------------------------------------------------
+# Served at /ui/sign.html  — the signer opens this page in their browser.
+# Served at /ui/keygen.html — generate a PGP key pair in-browser.
+#
+# Usage:
+#   http://localhost:8200/ui/sign.html?doc=<document_id>&signer=<signer_id>
+#   http://localhost:8200/ui/keygen.html
+#
+# The private key NEVER leaves the browser. Only the public key (for
+# verification) and the resulting signature are sent to the server.
+
+_UI_DIR = Path(__file__).parent / "ui"
+if _UI_DIR.exists():
+    app.mount("/ui", StaticFiles(directory=str(_UI_DIR), html=True), name="ui")
