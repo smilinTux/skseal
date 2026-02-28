@@ -23,6 +23,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+pkcs11 = [
+    "PyKCS11>=1.5.12",
+]
+timestamp = [
+    "rfc3161ng>=2.1",
+    "asn1crypto>=1.5",
+]
+all = [
+    "PyKCS11>=1.5.12",
+    "rfc3161ng>=2.1",
+    "asn1crypto>=1.5",
+]
 dev = [
     "pytest>=8.0",
     "pytest-cov>=4.0",

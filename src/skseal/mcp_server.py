@@ -38,7 +38,9 @@ from mcp.types import TextContent, Tool
 
 from .engine import SealEngine
 from .models import AuditAction, AuditEntry, Document, DocumentStatus, Signer, SignerRole
+from .models_timestamp import HashAlgorithm, TimestampConfig
 from .store import DocumentStore
+from .timestamp import DEFAULT_TSA_URL, load_tsr_file, timestamp_document, verify_timestamp
 
 logger = logging.getLogger("skseal.mcp")
 
@@ -274,6 +276,133 @@ async def list_tools() -> list[Tool]:
                 "required": ["fingerprint", "armor"],
             },
         ),
+        Tool(
+            name="timestamp_document",
+            description=(
+                "Request an RFC 3161 timestamp for a file. Submits the file hash "
+                "to a Time Stamping Authority (TSA) and saves the .tsr token. "
+                "Provides non-repudiation proof that the file existed at a specific time."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Absolute path to the file to timestamp.",
+                    },
+                    "tsa_url": {
+                        "type": "string",
+                        "description": "TSA endpoint URL (default: FreeTSA).",
+                    },
+                    "hash_algorithm": {
+                        "type": "string",
+                        "enum": ["sha256", "sha384", "sha512"],
+                        "description": "Hash algorithm (default: sha256).",
+                    },
+                    "save_token": {
+                        "type": "boolean",
+                        "description": "Save .tsr file next to document (default: true).",
+                    },
+                },
+                "required": ["file_path"],
+            },
+        ),
+        Tool(
+            name="verify_timestamp",
+            description=(
+                "Verify an RFC 3161 timestamp token against a file. "
+                "Checks that the .tsr token covers the file's current hash."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Absolute path to the original file.",
+                    },
+                    "tsr_path": {
+                        "type": "string",
+                        "description": "Path to the .tsr token file (default: <file>.tsr).",
+                    },
+                },
+                "required": ["file_path"],
+            },
+        ),
+        Tool(
+            name="timestamp_info",
+            description=(
+                "Parse and display metadata from a .tsr timestamp token file. "
+                "Returns TSA name, timestamp, serial number, policy, and hash details."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "tsr_path": {
+                        "type": "string",
+                        "description": "Path to the .tsr token file.",
+                    },
+                },
+                "required": ["tsr_path"],
+            },
+        ),
+        Tool(
+            name="list_hardware_tokens",
+            description=(
+                "List available PKCS#11 hardware tokens (YubiKey, NitroKey, HSM). "
+                "Shows slot IDs, labels, manufacturers, and whether signing keys are present."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "module_path": {
+                        "type": "string",
+                        "description": "Path to PKCS#11 module (.so/.dylib). Auto-detected if omitted.",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        Tool(
+            name="sign_with_hardware_token",
+            description=(
+                "Sign a document using a PKCS#11 hardware token (YubiKey, NitroKey). "
+                "The private key never leaves the token. Requires PIN authentication."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "document_id": {
+                        "type": "string",
+                        "description": "ID of the document to sign.",
+                    },
+                    "signer_fingerprint": {
+                        "type": "string",
+                        "description": "PGP fingerprint of the signer.",
+                    },
+                    "pin": {
+                        "type": "string",
+                        "description": "Hardware token PIN.",
+                    },
+                    "module_path": {
+                        "type": "string",
+                        "description": "Path to PKCS#11 module (.so/.dylib). Auto-detected if omitted.",
+                    },
+                    "token_label": {
+                        "type": "string",
+                        "description": "Token label to match (optional).",
+                    },
+                    "slot_id": {
+                        "type": "integer",
+                        "description": "Specific slot ID (optional).",
+                    },
+                    "key_id": {
+                        "type": "string",
+                        "description": "Key ID on token in hex (optional).",
+                    },
+                },
+                "required": ["document_id", "signer_fingerprint", "pin"],
+            },
+        ),
     ]
 
 
@@ -302,6 +431,11 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         "seal_document": _handle_seal_document,
         "get_audit_trail": _handle_get_audit_trail,
         "store_public_key": _handle_store_public_key,
+        "timestamp_document": _handle_timestamp_document,
+        "verify_timestamp": _handle_verify_timestamp,
+        "timestamp_info": _handle_timestamp_info,
+        "list_hardware_tokens": _handle_list_hardware_tokens,
+        "sign_with_hardware_token": _handle_sign_with_hardware_token,
     }
     handler = handlers.get(name)
     if handler is None:
@@ -708,6 +842,247 @@ async def _handle_store_public_key(args: dict) -> list[TextContent]:
         "fingerprint": fingerprint,
         "actual_fingerprint": actual_fp,
         "path": str(path),
+    })
+
+
+# ─────────────────────────────────────────────────────────────
+# Timestamp Tool Handlers
+# ─────────────────────────────────────────────────────────────
+
+
+async def _handle_timestamp_document(args: dict) -> list[TextContent]:
+    """Request an RFC 3161 timestamp for a file.
+
+    Args:
+        args: file_path (str), optional tsa_url, hash_algorithm, save_token.
+
+    Returns:
+        JSON with timestamp result details.
+    """
+    file_path: str = args.get("file_path", "")
+    if not file_path:
+        return _error("file_path is required")
+
+    path = Path(file_path)
+    if not path.exists():
+        return _error(f"File not found: {file_path}")
+
+    tsa_url: str = args.get("tsa_url", DEFAULT_TSA_URL)
+    algo_str: str = args.get("hash_algorithm", "sha256")
+    save_token: bool = args.get("save_token", True)
+
+    try:
+        algo = HashAlgorithm(algo_str)
+    except ValueError:
+        return _error(f"Invalid hash algorithm: {algo_str}")
+
+    config = TimestampConfig(tsa_url=tsa_url, hash_algorithm=algo)
+
+    try:
+        result = timestamp_document(file_path, config=config, save_token=save_token)
+    except Exception as exc:
+        return _error(f"Timestamp request failed: {exc}")
+
+    return _json({
+        "file_path": result.file_path,
+        "file_hash": result.file_hash,
+        "status": result.verification_status.value,
+        "tsa_url": result.tsa_url,
+        "tsr_path": result.tsr_path,
+        "timestamp": (
+            result.response.timestamp.isoformat()
+            if result.response and result.response.timestamp
+            else None
+        ),
+        "serial_number": (
+            result.response.serial_number if result.response else None
+        ),
+        "error": result.error,
+    })
+
+
+async def _handle_verify_timestamp(args: dict) -> list[TextContent]:
+    """Verify an RFC 3161 timestamp token against a file.
+
+    Args:
+        args: file_path (str), optional tsr_path (str).
+
+    Returns:
+        JSON with verification result.
+    """
+    file_path: str = args.get("file_path", "")
+    if not file_path:
+        return _error("file_path is required")
+
+    path = Path(file_path)
+    if not path.exists():
+        return _error(f"File not found: {file_path}")
+
+    tsr_path: str = args.get("tsr_path", "")
+    if not tsr_path:
+        tsr_path = file_path + ".tsr"
+
+    if not Path(tsr_path).exists():
+        return _error(f"TSR file not found: {tsr_path}")
+
+    file_bytes = path.read_bytes()
+    response = load_tsr_file(tsr_path)
+    is_valid = verify_timestamp(response, file_bytes)
+
+    return _json({
+        "file_path": file_path,
+        "tsr_path": tsr_path,
+        "valid": is_valid,
+        "tsa_url": response.tsa_url,
+        "timestamp": (
+            response.timestamp.isoformat() if response.timestamp else None
+        ),
+        "serial_number": response.serial_number,
+    })
+
+
+async def _handle_timestamp_info(args: dict) -> list[TextContent]:
+    """Parse and display metadata from a .tsr token file.
+
+    Args:
+        args: tsr_path (str).
+
+    Returns:
+        JSON with token metadata.
+    """
+    tsr_path: str = args.get("tsr_path", "")
+    if not tsr_path:
+        return _error("tsr_path is required")
+
+    if not Path(tsr_path).exists():
+        return _error(f"TSR file not found: {tsr_path}")
+
+    response = load_tsr_file(tsr_path)
+
+    return _json({
+        "tsr_path": tsr_path,
+        "status": response.status,
+        "is_granted": response.is_granted,
+        "tsa_url": response.tsa_url,
+        "timestamp": (
+            response.timestamp.isoformat() if response.timestamp else None
+        ),
+        "serial_number": response.serial_number,
+        "hash_algorithm": response.hash_algorithm.value,
+        "message_imprint": response.message_imprint,
+        "tsa_name": response.tsa_name,
+        "policy_id": response.policy_id,
+        "nonce": response.nonce,
+        "accuracy_seconds": response.accuracy_seconds,
+    })
+
+
+# ─────────────────────────────────────────────────────────────
+# Hardware Token Tool Handlers
+# ─────────────────────────────────────────────────────────────
+
+
+async def _handle_list_hardware_tokens(args: dict) -> list[TextContent]:
+    """List available PKCS#11 hardware tokens.
+
+    Args:
+        args: Optional module_path.
+
+    Returns:
+        JSON list of token info.
+    """
+    from .pkcs11 import list_tokens
+
+    module_path: str | None = args.get("module_path")
+
+    try:
+        tokens = list_tokens(module_path)
+    except RuntimeError as exc:
+        return _error(str(exc))
+
+    return _json([
+        {
+            "slot_id": t.slot_id,
+            "label": t.label,
+            "manufacturer": t.manufacturer,
+            "model": t.model,
+            "serial": t.serial,
+            "has_private_key": t.has_private_key,
+            "key_id": t.key_id,
+            "key_label": t.key_label,
+        }
+        for t in tokens
+    ])
+
+
+async def _handle_sign_with_hardware_token(args: dict) -> list[TextContent]:
+    """Sign a document using a PKCS#11 hardware token.
+
+    Args:
+        args: document_id, signer_fingerprint, pin, optional module/token/slot/key.
+
+    Returns:
+        JSON with signing result.
+    """
+    from .pkcs11 import PKCS11Config
+
+    document_id: str = args.get("document_id", "")
+    signer_fingerprint: str = args.get("signer_fingerprint", "")
+    pin: str = args.get("pin", "")
+
+    if not document_id:
+        return _error("document_id is required")
+    if not signer_fingerprint:
+        return _error("signer_fingerprint is required")
+    if not pin:
+        return _error("pin is required")
+
+    try:
+        document = _store.load_document(document_id)
+    except FileNotFoundError:
+        return _error(f"Document not found: {document_id}")
+
+    # Match signer by fingerprint prefix
+    signer_id: str | None = None
+    for s in document.signers:
+        if s.fingerprint.upper().startswith(signer_fingerprint.upper()):
+            signer_id = s.signer_id
+            break
+
+    if signer_id is None:
+        return _error(
+            f"No signer with fingerprint '{signer_fingerprint}' found in document."
+        )
+
+    config = PKCS11Config(
+        module_path=args.get("module_path", ""),
+        token_label=args.get("token_label"),
+        slot_id=args.get("slot_id"),
+        pin=pin,
+        key_id=args.get("key_id"),
+    )
+
+    try:
+        document = _engine.sign_document_pkcs11(
+            document=document,
+            signer_id=signer_id,
+            config=config,
+        )
+    except (ValueError, RuntimeError) as exc:
+        return _error(str(exc))
+
+    _store.save_document(document)
+
+    last_record = document.signatures[-1] if document.signatures else None
+
+    return _json({
+        "signed": True,
+        "method": "pkcs11",
+        "signer_id": signer_id,
+        "fingerprint": last_record.fingerprint if last_record else signer_fingerprint,
+        "record_id": last_record.record_id if last_record else None,
+        "signed_at": last_record.signed_at.isoformat() if last_record else None,
+        "document_status": document.status.value,
     })
 
 

@@ -28,7 +28,9 @@ from .models import (
     Signer,
     SignerStatus,
 )
+from .models_timestamp import TimestampConfig, TimestampStatus
 from .store import DocumentStore
+from .timestamp import DEFAULT_TSA_URL, load_tsr_file, timestamp_document, verify_timestamp
 
 console = Console()
 engine = SealEngine()
@@ -317,6 +319,441 @@ def serve(ctx: click.Context, host: str, port: int) -> None:
     )
     console.print("[dim]Sovereign document signing — no middleman.[/]\n")
     uvicorn.run("skseal.api:app", host=host, port=port, log_level="info")
+
+
+# ---------------------------------------------------------------------------
+# Timestamp
+# ---------------------------------------------------------------------------
+
+
+@main.group()
+def timestamp() -> None:
+    """RFC 3161 timestamp commands for non-repudiation proof."""
+
+
+@timestamp.command("stamp")
+@click.argument("file", type=click.Path(exists=True))
+@click.option(
+    "--tsa",
+    "tsa_url",
+    default=None,
+    help=f"TSA endpoint URL (default: {DEFAULT_TSA_URL})",
+)
+@click.option(
+    "--algorithm",
+    default="sha256",
+    type=click.Choice(["sha256", "sha384", "sha512"]),
+    help="Hash algorithm (default: sha256)",
+)
+@click.option(
+    "--no-save",
+    is_flag=True,
+    default=False,
+    help="Do not save .tsr token file alongside document",
+)
+@click.pass_context
+def timestamp_stamp(
+    ctx: click.Context,
+    file: str,
+    tsa_url: Optional[str],
+    algorithm: str,
+    no_save: bool,
+) -> None:
+    """Timestamp a document via an RFC 3161 TSA.
+
+    Hashes the file, submits the hash to a Time Stamping Authority, and
+    saves the token as <file>.tsr. Provides non-repudiation proof that the
+    file existed in its current form at the certified time.
+    """
+    from .models_timestamp import HashAlgorithm
+
+    config = TimestampConfig(
+        tsa_url=tsa_url or DEFAULT_TSA_URL,
+        hash_algorithm=HashAlgorithm(algorithm),
+    )
+
+    with console.status(f"[bold]Submitting timestamp request to {config.tsa_url}...[/]"):
+        try:
+            result = timestamp_document(
+                file_path=file,
+                config=config,
+                save_token=not no_save,
+            )
+        except FileNotFoundError as exc:
+            console.print(f"[red]File not found: {exc}[/]")
+            sys.exit(1)
+        except Exception as exc:
+            console.print(f"[red]Timestamp failed: {exc}[/]")
+            sys.exit(1)
+
+    if result.error:
+        console.print(
+            Panel(
+                f"[bold red]Timestamp failed[/]\n\n{result.error}",
+                title="SKSeal Timestamp",
+                border_style="red",
+            )
+        )
+        sys.exit(1)
+
+    ts_display = (
+        result.response.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+        if result.response and result.response.timestamp
+        else "unknown"
+    )
+    status_color = "green" if result.is_valid else "yellow"
+    status_text = result.verification_status.value.upper()
+
+    console.print(
+        Panel(
+            f"[bold {status_color}]Timestamp {status_text}[/]\n\n"
+            f"  File:       {result.file_path}\n"
+            f"  Hash:       {result.file_hash[:32]}...\n"
+            f"  Algorithm:  {result.hash_algorithm.value}\n"
+            f"  TSA:        {result.tsa_url}\n"
+            f"  Certified:  {ts_display}\n"
+            f"  Serial:     {result.response.serial_number if result.response else 'N/A'}\n"
+            f"  Token:      {result.tsr_path or '(not saved)'}",
+            title="SKSeal Timestamp",
+            border_style=status_color,
+        )
+    )
+
+
+@timestamp.command("verify")
+@click.argument("file", type=click.Path(exists=True))
+@click.option(
+    "--token",
+    "tsr_file",
+    default=None,
+    type=click.Path(),
+    help="Path to .tsr token file (default: <file>.tsr)",
+)
+@click.option(
+    "--tsa",
+    "tsa_url",
+    default=DEFAULT_TSA_URL,
+    help="TSA URL to embed in metadata (informational)",
+)
+@click.pass_context
+def timestamp_verify(
+    ctx: click.Context,
+    file: str,
+    tsr_file: Optional[str],
+    tsa_url: str,
+) -> None:
+    """Verify a timestamp token against a document.
+
+    Checks that the .tsr token covers the given file and the message imprint
+    matches the document's current content.
+    """
+    import hashlib
+    from pathlib import Path
+
+    file_path = Path(file).resolve()
+    tsr_path = tsr_file or str(file_path) + ".tsr"
+
+    if not Path(tsr_path).exists():
+        console.print(f"[red]Token file not found: {tsr_path}[/]")
+        console.print(
+            "[dim]Run [bold]skseal timestamp stamp <file>[/] first to create a token.[/]"
+        )
+        sys.exit(1)
+
+    try:
+        response = load_tsr_file(tsr_path, tsa_url=tsa_url)
+    except Exception as exc:
+        console.print(f"[red]Failed to load token: {exc}[/]")
+        sys.exit(1)
+
+    file_bytes = file_path.read_bytes()
+
+    try:
+        is_valid = verify_timestamp(response, file_bytes)
+    except Exception as exc:
+        console.print(f"[red]Verification error: {exc}[/]")
+        sys.exit(1)
+
+    status_color = "green" if is_valid else "red"
+    status_text = "VALID" if is_valid else "INVALID"
+
+    ts_display = (
+        response.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+        if response.timestamp
+        else "unknown"
+    )
+
+    console.print(
+        Panel(
+            f"[bold {status_color}]Timestamp {status_text}[/]\n\n"
+            f"  File:      {file_path}\n"
+            f"  Token:     {tsr_path}\n"
+            f"  TSA:       {response.tsa_url}\n"
+            f"  Certified: {ts_display}\n"
+            f"  Serial:    {response.serial_number or 'N/A'}",
+            title="SKSeal Timestamp Verify",
+            border_style=status_color,
+        )
+    )
+
+    if not is_valid:
+        sys.exit(1)
+
+
+@timestamp.command("info")
+@click.argument("tsr_file", type=click.Path(exists=True))
+@click.option(
+    "--tsa",
+    "tsa_url",
+    default=DEFAULT_TSA_URL,
+    help="TSA URL to embed in metadata (informational)",
+)
+def timestamp_info(tsr_file: str, tsa_url: str) -> None:
+    """Show details of a .tsr timestamp token file.
+
+    Parses and displays the token metadata without verifying against a
+    specific document.
+    """
+    try:
+        response = load_tsr_file(tsr_file, tsa_url=tsa_url)
+    except Exception as exc:
+        console.print(f"[red]Failed to load token: {exc}[/]")
+        sys.exit(1)
+
+    ts_display = (
+        response.timestamp.strftime("%Y-%m-%d %H:%M:%S UTC")
+        if response.timestamp
+        else "unknown"
+    )
+
+    table = Table(title=f"Timestamp Token: {tsr_file}")
+    table.add_column("Field", style="cyan")
+    table.add_column("Value")
+
+    table.add_row("Status", str(response.status))
+    table.add_row("Status String", response.status_string or "—")
+    table.add_row("TSA URL", response.tsa_url)
+    table.add_row("Certified Time", ts_display)
+    table.add_row("Serial Number", str(response.serial_number or "—"))
+    table.add_row("Hash Algorithm", response.hash_algorithm.value)
+    table.add_row(
+        "Message Imprint",
+        (response.message_imprint[:32] + "...") if response.message_imprint else "—",
+    )
+    table.add_row("Policy OID", response.policy_id or "—")
+    table.add_row(
+        "Accuracy",
+        f"{response.accuracy_seconds}s" if response.accuracy_seconds else "—",
+    )
+    table.add_row("Nonce", str(response.nonce) if response.nonce else "—")
+    table.add_row("TSA Name", response.tsa_name or "—")
+    table.add_row(
+        "Token Size",
+        f"{len(response.token_der)} bytes" if response.token_der else "—",
+    )
+    table.add_row("Granted", "[green]Yes[/]" if response.is_granted else "[red]No[/]")
+
+    console.print(table)
+
+
+# ---------------------------------------------------------------------------
+# Token (PKCS#11 hardware token)
+# ---------------------------------------------------------------------------
+
+
+@main.group()
+def token() -> None:
+    """PKCS#11 hardware token commands (YubiKey, NitroKey, HSM)."""
+
+
+@token.command("list")
+@click.option(
+    "--module",
+    "module_path",
+    default=None,
+    type=click.Path(),
+    help="Path to PKCS#11 module (.so/.dylib). Auto-detected if omitted.",
+)
+def token_list(module_path: Optional[str]) -> None:
+    """List available hardware tokens and their signing keys."""
+    from .pkcs11 import find_pkcs11_module, list_tokens
+
+    if module_path is None:
+        module_path = find_pkcs11_module()
+        if module_path is None:
+            console.print(
+                "[red]No PKCS#11 module found.[/]\n"
+                "[dim]Install OpenSC or specify --module path.[/]"
+            )
+            sys.exit(1)
+        console.print(f"[dim]Using module: {module_path}[/]\n")
+
+    try:
+        tokens = list_tokens(module_path)
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/]")
+        sys.exit(1)
+
+    if not tokens:
+        console.print("[dim]No tokens found.[/]")
+        return
+
+    table = Table(title="PKCS#11 Hardware Tokens")
+    table.add_column("Slot", style="dim", justify="right")
+    table.add_column("Label", style="cyan")
+    table.add_column("Manufacturer")
+    table.add_column("Model")
+    table.add_column("Serial", style="dim")
+    table.add_column("Signing Key", justify="center")
+
+    for t in tokens:
+        key_status = (
+            f"[green]Yes[/] ({t.key_label or t.key_id or '?'})"
+            if t.has_private_key
+            else "[dim]No[/]"
+        )
+        table.add_row(
+            str(t.slot_id),
+            t.label,
+            t.manufacturer,
+            t.model,
+            t.serial,
+            key_status,
+        )
+
+    console.print(table)
+
+
+@token.command("sign")
+@click.argument("pdf", type=click.Path(exists=True))
+@click.option("--module", "module_path", default=None, type=click.Path(), help="PKCS#11 module path")
+@click.option("--pin", prompt=True, hide_input=True, help="Token PIN")
+@click.option("--name", required=True, help="Signer display name")
+@click.option("--title", default=None, help="Document title")
+@click.option("--slot", "slot_id", default=None, type=int, help="Token slot ID")
+@click.option("--token-label", default=None, help="Token label to match")
+@click.option("--key-id", default=None, help="Key ID on token (hex)")
+@click.option("--key-label", default=None, help="Key label on token")
+@click.pass_context
+def token_sign(
+    ctx: click.Context,
+    pdf: str,
+    module_path: Optional[str],
+    pin: str,
+    name: str,
+    title: Optional[str],
+    slot_id: Optional[int],
+    token_label: Optional[str],
+    key_id: Optional[str],
+    key_label: Optional[str],
+) -> None:
+    """Sign a PDF using a hardware token (YubiKey, NitroKey, HSM).
+
+    The private key never leaves the token. Only the document hash
+    is sent to the device for signing.
+    """
+    from .pkcs11 import PKCS11Config, find_pkcs11_module
+
+    store: DocumentStore = ctx.obj["store"]
+    pdf_path = Path(pdf)
+    pdf_data = pdf_path.read_bytes()
+    pdf_hash = engine.hash_bytes(pdf_data)
+
+    if module_path is None:
+        module_path = find_pkcs11_module()
+        if module_path is None:
+            console.print(
+                "[red]No PKCS#11 module found.[/] Specify --module."
+            )
+            sys.exit(1)
+
+    config = PKCS11Config(
+        module_path=module_path,
+        token_label=token_label,
+        slot_id=slot_id,
+        pin=pin,
+        key_id=key_id,
+        key_label=key_label,
+    )
+
+    doc_title = title or pdf_path.stem
+    fingerprint = key_id or "PKCS11-TOKEN"
+
+    signer = Signer(name=name, fingerprint=fingerprint)
+    doc = Document(
+        title=doc_title,
+        pdf_path=str(pdf_path),
+        pdf_hash=pdf_hash,
+        signers=[signer],
+        status=DocumentStatus.PENDING,
+    )
+    doc.audit_trail.append(
+        AuditEntry(
+            document_id=doc.document_id,
+            action=AuditAction.CREATED,
+            actor_fingerprint=fingerprint,
+            actor_name=name,
+            details=f"Created for hardware signing: {doc_title}",
+        )
+    )
+
+    with console.status("[bold]Signing with hardware token...[/]"):
+        try:
+            doc = engine.sign_document_pkcs11(
+                document=doc,
+                signer_id=signer.signer_id,
+                config=config,
+                pdf_data=pdf_data,
+            )
+        except RuntimeError as exc:
+            console.print(f"[red]Hardware signing failed: {exc}[/]")
+            sys.exit(1)
+
+    store.save_document(doc, pdf_data=pdf_data)
+    for entry in doc.audit_trail:
+        store.append_audit(entry)
+
+    console.print(
+        Panel(
+            f"[bold green]Document signed with hardware token![/]\n\n"
+            f"  Document: {doc.title}\n"
+            f"  ID:       {doc.document_id[:16]}...\n"
+            f"  Hash:     {pdf_hash[:16]}...\n"
+            f"  Signer:   {name}\n"
+            f"  Token:    {token_label or 'default'}\n"
+            f"  Status:   {doc.status.value}",
+            title="SKSeal — Hardware Token",
+            border_style="green",
+        )
+    )
+
+
+@token.command("info")
+@click.option("--module", "module_path", default=None, type=click.Path(), help="PKCS#11 module path")
+def token_info(module_path: Optional[str]) -> None:
+    """Show detailed info about the PKCS#11 environment."""
+    from .pkcs11 import DEFAULT_MODULE_PATHS, _has_pkcs11, find_pkcs11_module
+
+    console.print(Panel("[bold]PKCS#11 Environment[/]", border_style="cyan"))
+
+    # PyKCS11 availability
+    if _has_pkcs11():
+        console.print("  PyKCS11:  [green]installed[/]")
+    else:
+        console.print("  PyKCS11:  [red]not installed[/]")
+        console.print("  [dim]Install with: pip install PyKCS11[/]")
+        return
+
+    # Module detection
+    detected = find_pkcs11_module()
+    console.print(f"  Module:   {detected or '[dim]none found[/]'}")
+
+    # Available module paths
+    console.print("\n  [bold]Module paths searched:[/]")
+    for p in DEFAULT_MODULE_PATHS:
+        exists = Path(p).exists()
+        marker = "[green]found[/]" if exists else "[dim]—[/]"
+        console.print(f"    {p}  {marker}")
 
 
 if __name__ == "__main__":

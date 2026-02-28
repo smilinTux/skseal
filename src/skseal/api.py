@@ -26,7 +26,14 @@ from .models import (
     SignerStatus,
     Template,
 )
+from .models_timestamp import HashAlgorithm, TimestampConfig, TimestampStatus
 from .store import DocumentStore
+from .timestamp import (
+    DEFAULT_TSA_URL,
+    load_tsr_file,
+    timestamp_document,
+    verify_timestamp,
+)
 
 logger = logging.getLogger("skseal.api")
 
@@ -98,6 +105,19 @@ class SealRequest(BaseModel):
 
     sealing_key_armor: str
     passphrase: str
+
+
+class TimestampRequest(BaseModel):
+    """Request body for timestamping a document."""
+
+    tsa_url: Optional[str] = None
+    hash_algorithm: str = "sha256"
+
+
+class VerifyTimestampRequest(BaseModel):
+    """Request body for verifying a timestamp."""
+
+    tsr_path: Optional[str] = None
 
 
 class VerifyResult(BaseModel):
@@ -459,6 +479,149 @@ async def store_public_key(fingerprint: str, armor: str) -> dict:
 async def list_keys() -> list[str]:
     """List all cached public key fingerprints."""
     return _store.list_public_keys()
+
+
+# ---------------------------------------------------------------------------
+# Timestamp endpoints (RFC 3161)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/documents/{document_id}/timestamp")
+async def timestamp_doc(document_id: str, req: TimestampRequest) -> dict:
+    """Request an RFC 3161 timestamp for a document.
+
+    Submits the document's PDF hash to a Time Stamping Authority (TSA)
+    and saves the resulting .tsr token alongside the document.
+    """
+    try:
+        doc = _store.load_document(document_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    pdf_data = _store.get_document_pdf(document_id)
+    if pdf_data is None:
+        raise HTTPException(status_code=400, detail="No PDF attached to document")
+
+    # Write PDF to a temp file for timestamp_document()
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+        tmp.write(pdf_data)
+        tmp_path = tmp.name
+
+    try:
+        algo = HashAlgorithm(req.hash_algorithm)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid hash algorithm: {req.hash_algorithm}",
+        )
+
+    config = TimestampConfig(
+        tsa_url=req.tsa_url or DEFAULT_TSA_URL,
+        hash_algorithm=algo,
+    )
+
+    try:
+        result = timestamp_document(tmp_path, config=config, save_token=True)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Timestamp request failed: {exc}")
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    doc.audit_trail.append(
+        AuditEntry(
+            document_id=document_id,
+            action=AuditAction.SIGNED,
+            details=f"RFC 3161 timestamp from {result.tsa_url}: {result.verification_status.value}",
+        )
+    )
+    doc.metadata["timestamp_status"] = result.verification_status.value
+    doc.metadata["timestamp_tsa"] = result.tsa_url
+    if result.response and result.response.timestamp:
+        doc.metadata["timestamp_time"] = result.response.timestamp.isoformat()
+    if result.tsr_path:
+        doc.metadata["timestamp_tsr_path"] = result.tsr_path
+
+    _store.save_document(doc)
+    for entry in doc.audit_trail:
+        _store.append_audit(entry)
+
+    return {
+        "document_id": document_id,
+        "status": result.verification_status.value,
+        "tsa_url": result.tsa_url,
+        "file_hash": result.file_hash,
+        "tsr_path": result.tsr_path,
+        "timestamp": (
+            result.response.timestamp.isoformat()
+            if result.response and result.response.timestamp
+            else None
+        ),
+        "error": result.error,
+    }
+
+
+@app.post("/api/documents/{document_id}/timestamp/verify")
+async def verify_doc_timestamp(
+    document_id: str, req: VerifyTimestampRequest
+) -> dict:
+    """Verify an RFC 3161 timestamp token against a document's PDF."""
+    try:
+        doc = _store.load_document(document_id)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    pdf_data = _store.get_document_pdf(document_id)
+    if pdf_data is None:
+        raise HTTPException(status_code=400, detail="No PDF attached to document")
+
+    tsr_path = req.tsr_path or doc.metadata.get("timestamp_tsr_path")
+    if not tsr_path:
+        raise HTTPException(
+            status_code=400,
+            detail="No .tsr path provided and no timestamp on record",
+        )
+
+    if not Path(tsr_path).exists():
+        raise HTTPException(status_code=404, detail=f"TSR file not found: {tsr_path}")
+
+    tsa_url = doc.metadata.get("timestamp_tsa", DEFAULT_TSA_URL)
+    response = load_tsr_file(tsr_path, tsa_url=tsa_url)
+    is_valid = verify_timestamp(response, pdf_data)
+
+    return {
+        "document_id": document_id,
+        "valid": is_valid,
+        "status": "valid" if is_valid else "invalid",
+        "tsa_url": tsa_url,
+        "timestamp": (
+            response.timestamp.isoformat() if response.timestamp else None
+        ),
+        "serial_number": response.serial_number,
+    }
+
+
+@app.get("/api/timestamp/info")
+async def timestamp_info(tsr_path: str = Query(..., description="Path to .tsr file")) -> dict:
+    """Parse and display metadata from a .tsr token file."""
+    if not Path(tsr_path).exists():
+        raise HTTPException(status_code=404, detail=f"TSR file not found: {tsr_path}")
+
+    response = load_tsr_file(tsr_path)
+    return {
+        "tsr_path": tsr_path,
+        "status": response.status,
+        "is_granted": response.is_granted,
+        "tsa_url": response.tsa_url,
+        "timestamp": (
+            response.timestamp.isoformat() if response.timestamp else None
+        ),
+        "serial_number": response.serial_number,
+        "hash_algorithm": response.hash_algorithm.value,
+        "message_imprint": response.message_imprint,
+        "policy_id": response.policy_id,
+        "nonce": response.nonce,
+        "accuracy_seconds": response.accuracy_seconds,
+    }
 
 
 # ---------------------------------------------------------------------------

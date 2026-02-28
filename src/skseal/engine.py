@@ -310,6 +310,121 @@ class SealEngine:
         return self._pgp_verify(digest, seal_armor, sealing_pubkey_armor)
 
     # ------------------------------------------------------------------
+    # Hardware token signing
+    # ------------------------------------------------------------------
+
+    def sign_document_pkcs11(
+        self,
+        document: Document,
+        signer_id: str,
+        config: "PKCS11Config",
+        pdf_data: Optional[bytes] = None,
+        pdf_path: Optional[Path] = None,
+        field_values: Optional[dict[str, str]] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None,
+    ) -> Document:
+        """Sign a document using a PKCS#11 hardware token.
+
+        The private key never leaves the hardware token. The document hash
+        is sent to the token for signing, and only the signature is returned.
+
+        Args:
+            document: The document to sign.
+            signer_id: ID of the signer within the document.
+            config: PKCS#11 configuration (module path, PIN, token/key selection).
+            pdf_data: Raw PDF bytes (provide this OR pdf_path).
+            pdf_path: Path to the PDF file.
+            field_values: Values the signer filled in.
+            ip_address: Signer's IP for audit.
+            user_agent: Signer's client info for audit.
+
+        Returns:
+            Updated Document with signature and audit entries.
+
+        Raises:
+            ValueError: If signer not found or document not signable.
+            RuntimeError: If PKCS#11 signing fails.
+        """
+        from .pkcs11 import PKCS11Config, sign_with_token
+
+        signer = self._get_signer(document, signer_id)
+        self._validate_signing_state(document, signer)
+
+        doc_hash = self._resolve_hash(document, pdf_data, pdf_path)
+
+        # Sign the hash using the hardware token
+        raw_signature = sign_with_token(
+            data=doc_hash.encode("utf-8"),
+            config=config,
+        )
+
+        import base64
+        signature_b64 = base64.b64encode(raw_signature).decode("ascii")
+        signature_armor = (
+            f"-----BEGIN PKCS11 SIGNATURE-----\n"
+            f"Token: {config.token_label or 'default'}\n"
+            f"Algorithm: {config.hash_algorithm}\n\n"
+            f"{signature_b64}\n"
+            f"-----END PKCS11 SIGNATURE-----"
+        )
+
+        # Use key_id or token serial as fingerprint
+        fingerprint = config.key_id or "PKCS11-TOKEN"
+
+        now = datetime.now(timezone.utc)
+
+        record = SignatureRecord(
+            document_id=document.document_id,
+            signer_id=signer_id,
+            fingerprint=fingerprint,
+            document_hash=doc_hash,
+            signature_armor=signature_armor,
+            signed_at=now,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            field_values=field_values or {},
+        )
+        document.signatures.append(record)
+
+        signer.status = SignerStatus.SIGNED
+        signer.signed_at = now
+        signer.fingerprint = fingerprint
+
+        document.audit_trail.append(
+            AuditEntry(
+                document_id=document.document_id,
+                action=AuditAction.SIGNED,
+                actor_fingerprint=fingerprint,
+                actor_name=signer.name,
+                timestamp=now,
+                details=f"Signed with hardware token (PKCS#11): {config.token_label or 'default'}",
+                ip_address=ip_address,
+            )
+        )
+
+        if document.is_complete:
+            document.status = DocumentStatus.COMPLETED
+            document.completed_at = now
+            document.audit_trail.append(
+                AuditEntry(
+                    document_id=document.document_id,
+                    action=AuditAction.COMPLETED,
+                    timestamp=now,
+                    details="All signers have signed.",
+                )
+            )
+        else:
+            document.status = DocumentStatus.PARTIALLY_SIGNED
+
+        logger.info(
+            "Signer %s signed document %s with PKCS#11 token",
+            signer.name,
+            document.document_id[:8],
+        )
+        return document
+
+    # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
 
