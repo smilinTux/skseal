@@ -297,9 +297,21 @@ export async function extractFingerprint(armoredKey: string): Promise<string> {
   try {
     const key = await openpgp.readKey({ armoredKey });
     return key.getFingerprint().toUpperCase();
-  } catch {
-    // Try as private key
-    const key = await openpgp.readPrivateKey({ armoredKey });
-    return key.getFingerprint().toUpperCase();
+  } catch (publicKeyErr) {
+    // Not a public key — try as private key before giving up
+    try {
+      const key = await openpgp.readPrivateKey({ armoredKey });
+      return key.getFingerprint().toUpperCase();
+    } catch (privateKeyErr) {
+      console.error(
+        "extractFingerprint: failed to parse armored key as public or private key",
+        { publicKeyErr, privateKeyErr },
+      );
+      throw new Error(
+        `Failed to extract fingerprint: not a valid PGP key — ` +
+        `public parse error: ${publicKeyErr instanceof Error ? publicKeyErr.message : String(publicKeyErr)}, ` +
+        `private parse error: ${privateKeyErr instanceof Error ? privateKeyErr.message : String(privateKeyErr)}`,
+      );
+    }
   }
 }

@@ -13,14 +13,14 @@ authors = [
     {name = "smilinTux.org", email = "hello@smilintux.org"},
 ]
 dependencies = [
-    "pydantic>=2.0",
-    "pgpy>=0.6",
-    "pypdf>=4.0",
-    "click>=8.0",
-    "rich>=13.0",
-    "fastapi>=0.110",
+    "pydantic>=2.0,<3.0",
+    "pgpy>=0.6,<1.0",
+    "pypdf>=4.0,<5.0",
+    "click>=8.0,<9.0",
+    "rich>=13.0,<14.0",
+    "fastapi>=0.110,<1.0",
     "uvicorn>=0.27",
-    "aiofiles>=23.0",
+    "aiofiles>=23.0,<25.0",
 ]
 
 [project.optional-dependencies]

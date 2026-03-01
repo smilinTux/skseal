@@ -268,7 +268,8 @@ class DocumentStore:
         for line in log_path.read_text(encoding="utf-8").strip().splitlines():
             try:
                 entries.append(AuditEntry.model_validate_json(line))
-            except Exception:
+            except Exception as exc:
+                logger.warning("Skipping invalid audit entry in %s: %s", document_id, exc)
                 continue
         return sorted(entries, key=lambda e: e.timestamp)
 

@@ -514,7 +514,10 @@ class SealEngine:
 
             verification = pub_key.verify(signed_msg)
             return bool(verification)
-        except Exception:
+        except Exception as exc:
+            logger.error(
+                "PGP signature verification failed: %s", exc, exc_info=True
+            )
             return False
 
     @staticmethod
