@@ -1,0 +1,38 @@
+name: skseal
+version: "0.1.0"
+description: >
+  Sovereign document signing and sealing. PGP-signed templates, document
+  lifecycle management, hardware token support, timestamp anchoring, and
+  P2P co-signing workflows for sovereign legal and audit processes.
+
+author:
+  name: smilinTux.org
+  email: hello@smilintux.org
+
+tags: [signing, sealing, pgp, documents, audit, legal, timestamp]
+category: core
+
+tools:
+  - name: create_document
+    description: Create a new document from a template
+    entrypoint: skseal.skill:create_document
+
+  - name: sign_document
+    description: Sign a document with PGP key
+    entrypoint: skseal.skill:sign_document
+
+  - name: verify_document
+    description: Verify a document's PGP signature
+    entrypoint: skseal.skill:verify_document
+
+  - name: seal_document
+    description: Seal a document (final, immutable)
+    entrypoint: skseal.skill:seal_document
+
+  - name: get_audit_trail
+    description: Get the full audit trail for a document
+    entrypoint: skseal.skill:get_audit_trail
+
+  - name: timestamp_document
+    description: Add a trusted timestamp to a document
+    entrypoint: skseal.skill:timestamp_document

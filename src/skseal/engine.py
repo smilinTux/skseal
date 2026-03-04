@@ -522,8 +522,16 @@ class SealEngine:
 
     @staticmethod
     def _extract_fingerprint(key_armor: str) -> str:
-        """Extract PGP fingerprint from an armored key."""
-        key, _ = pgpy.PGPKey.from_blob(key_armor)
+        """Extract PGP fingerprint from an armored key.
+
+        Raises:
+            ValueError: If the armor is not a valid PGP key.
+        """
+        try:
+            key, _ = pgpy.PGPKey.from_blob(key_armor)
+        except Exception as exc:
+            logger.error("GPG key export failed — could not parse armored key: %s", exc)
+            raise ValueError(f"Invalid PGP key: {exc}") from exc
         return str(key.fingerprint).replace(" ", "")
 
     @staticmethod

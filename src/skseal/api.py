@@ -485,6 +485,11 @@ async def seal_document(document_id: str, req: SealRequest) -> dict:
 @app.post("/api/keys", status_code=201)
 async def store_public_key(fingerprint: str, armor: str) -> dict:
     """Cache a public key for future verification."""
+    try:
+        _engine._extract_fingerprint(armor)
+    except ValueError as exc:
+        logger.error("store_public_key: rejected invalid PGP armor for %s: %s", fingerprint, exc)
+        raise HTTPException(status_code=400, detail=f"Invalid PGP key armor: {exc}")
     _store.store_public_key(fingerprint, armor)
     return {"fingerprint": fingerprint, "stored": True}
 
@@ -506,6 +511,23 @@ async def register_public_key(req: RegisterKeyRequest) -> dict:
     The private key NEVER leaves the browser — only the public component is
     sent here so the server can store it for later verification.
     """
+    try:
+        parsed_fp = _engine._extract_fingerprint(req.armor)
+    except ValueError as exc:
+        logger.error(
+            "register_public_key: rejected invalid PGP armor for %s: %s",
+            req.fingerprint, exc,
+        )
+        raise HTTPException(status_code=400, detail=f"Invalid PGP key armor: {exc}")
+    if parsed_fp.upper() != req.fingerprint.upper():
+        logger.warning(
+            "register_public_key: fingerprint mismatch — claimed %s, key is %s",
+            req.fingerprint, parsed_fp,
+        )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Fingerprint mismatch: key is {parsed_fp}, claimed {req.fingerprint}",
+        )
     _store.store_public_key(req.fingerprint, req.armor)
     return {"fingerprint": req.fingerprint, "stored": True}
 

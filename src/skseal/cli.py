@@ -82,7 +82,11 @@ def sign(
     pdf_data = pdf_path.read_bytes()
     pdf_hash = engine.hash_bytes(pdf_data)
 
-    fingerprint = engine._extract_fingerprint(key_armor)
+    try:
+        fingerprint = engine._extract_fingerprint(key_armor)
+    except ValueError as exc:
+        console.print(f"[red]Invalid PGP key: {exc}[/]")
+        sys.exit(1)
 
     signer = Signer(name=name, fingerprint=fingerprint)
     doc = Document(
@@ -150,7 +154,11 @@ def verify(ctx: click.Context, document_id: str, pubkey: tuple[str, ...]) -> Non
     public_keys: dict[str, str] = {}
     for pk_path in pubkey:
         armor = Path(pk_path).read_text(encoding="utf-8")
-        fp = engine._extract_fingerprint(armor)
+        try:
+            fp = engine._extract_fingerprint(armor)
+        except ValueError as exc:
+            console.print(f"[red]Invalid PGP key {pk_path}: {exc}[/]")
+            sys.exit(1)
         public_keys[fp] = armor
 
     for record in doc.signatures:
