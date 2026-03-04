@@ -1,0 +1,27 @@
+{
+  "name": "@smilintux/skseal",
+  "version": "0.1.0",
+  "description": "SKSeal - Sovereign document signing and sealing. PGP-backed, legally binding, no middleman. Hardware token support and P2P co-signing.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "skseal",
+    "signing",
+    "sealing",
+    "pgp",
+    "documents",
+    "legal",
+    "sovereign",
+    "timestamp"
+  ],
+  "author": "smilinTux <chefboyrdave2.1@gmail.com>",
+  "license": "GPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smilinTux/skseal.git"
+  },
+  "homepage": "https://github.com/smilinTux/skseal",
+  "bugs": {
+    "url": "https://github.com/smilinTux/skseal/issues"
+  }
+}
