@@ -1,79 +1,439 @@
 # SKSeal
 
-![PyPI](https://img.shields.io/pypi/v/skseal) ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+[![PyPI version](https://img.shields.io/pypi/v/skseal.svg)](https://pypi.org/project/skseal/)
+[![npm version](https://img.shields.io/npm/v/@smilintux/skseal.svg)](https://www.npmjs.com/package/@smilintux/skseal)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/pypi/pyversions/skseal.svg)](https://pypi.org/project/skseal/)
 
-Sovereign document sealing with OpenPGP. Sign PDFs with your PGP key, verify signatures client-side, and maintain a tamper-evident audit trail — no middleman, no cloud, no trust required.
+**Sovereign document signing — PGP-backed, legally binding, no middleman.**
 
-## Features
+SKSeal is a self-hosted document signing platform that replaces cloud e-signature services (DocuSign, DocuSeal, HelloSign) with cryptography you control. Documents are signed with PGP keys, optionally with hardware tokens (YubiKey, NitroKey, HSM via PKCS#11), anchored in time with RFC 3161 timestamps, and delivered peer-to-peer over SKComm — all without any third-party server in the trust path. Signatures are detached PGP signatures over SHA-256 document hashes, verifiable forever with standard OpenPGP tooling. An MCP server exposes the full signing lifecycle as AI-agent tools, and a FastAPI REST server provides browser-based signing via OpenPGP.js so private keys never leave the signer's device.
 
-- **PGP signing** — sign PDFs with an armored private key or a PKCS#11 hardware token (YubiKey, NitroKey, HSM)
-- **Client-side verification** — verify all signatures locally; public keys never leave your machine
-- **RFC 3161 timestamps** — certify documents with a Time Stamping Authority for non-repudiation proof
-- **Audit trail** — every action (create, sign, verify, void) is appended to an immutable log
-- **REST API** — FastAPI server on port 8400 for integration with other services
-- **MCP server** — expose signing tools to AI agents via the Model Context Protocol
+---
 
 ## Install
 
 ```bash
+# Core (PGP signing, REST API, CLI)
 pip install skseal
 
-# Optional extras
-pip install "skseal[timestamp]"   # RFC 3161 TSA support
-pip install "skseal[pkcs11]"      # PKCS#11 hardware token support
-pip install "skseal[all]"         # Everything
+# With RFC 3161 timestamping support
+pip install "skseal[timestamp]"
+
+# With PKCS#11 hardware token support
+pip install "skseal[pkcs11]"
+
+# Full install (all optional features)
+pip install "skseal[all]"
 ```
 
-## Quick Usage
+```bash
+# npm (MCP type definitions / JS integration shim)
+npm install @smilintux/skseal
+```
+
+---
+
+## Architecture
+
+```mermaid
+flowchart TD
+    User(["User / AI Agent"])
+
+    CLI["CLI\nskseal sign · verify · timestamp · token"]
+    API["REST API\nFastAPI — :8400\n/api/documents · /api/keys · ..."]
+    MCP["MCP Server\nstdio — AI agent tools"]
+
+    Engine["SealEngine\nPGP sign · verify · seal\nSHA-256 hash"]
+    Store[("DocumentStore\n~/.skseal\ndocuments · templates · keys · audit")]
+
+    PKCS11["PKCS#11\nYubiKey · NitroKey · SoftHSM\nPrivate key never leaves token"]
+    TS["RFC 3161 Timestamp\nFreeTSA · DigiCert · GlobalSign\n.tsr token"]
+    P2P["SKComm P2P Transport\nSIGNING_REQUEST / SIGNING_RESPONSE\nNo central server"]
+    Browser["Browser UI\nOpenPGP.js\nKey never leaves browser"]
+
+    User --> CLI
+    User --> API
+    User --> MCP
+    API --> Browser
+
+    CLI --> Engine
+    API --> Engine
+    MCP --> Engine
+
+    CLI --> Store
+    API --> Store
+    MCP --> Store
+
+    Engine --> PKCS11
+    Engine --> TS
+    Engine --> P2P
+
+    TS -->|".tsr saved to disk"| Store
+    P2P <-->|"signed hash over SKComm"| Peer(["Remote Peer"])
+```
+
+### Component summary
+
+| Component | Role |
+|---|---|
+| `SealEngine` | Stateless crypto core: SHA-256 hash, PGP sign/verify, tamper-evident seal |
+| `DocumentStore` | Local filesystem store under `~/.skseal` — no database required |
+| `CLI` | `click` + `rich` command-line interface |
+| `REST API` | FastAPI server with browser-signing UI (OpenPGP.js) |
+| `MCP Server` | Stdio MCP server exposing all signing operations as AI-agent tools |
+| `PKCS#11` | Optional hardware token signing; private key never extracted from device |
+| `Timestamp` | RFC 3161 client with DER ASN.1 fallback; saves `.tsr` token files |
+| `SKComm Transport` | P2P signing request/response delivery over sovereign SKComm |
+
+---
+
+## Features
+
+- **PGP-backed signatures** — detached signatures over SHA-256 document hashes using `pgpy`; verifiable with any OpenPGP tool
+- **Hardware token signing** — sign with YubiKey, NitroKey, or any PKCS#11 HSM; private key never leaves the device
+- **RFC 3161 timestamps** — anchor documents to a trusted Time Stamping Authority for non-repudiation and eIDAS compliance; tokens saved as standard `.tsr` files
+- **P2P co-signing via SKComm** — send and receive signing requests directly between peers with no central server in the trust path
+- **MCP server** — expose the full signing workflow as tools for AI agents (Claude Code, Cursor, Claude Desktop, Windsurf, Cline)
+- **REST API** — FastAPI server with client-side signing UI; signer's private key never leaves their browser (OpenPGP.js)
+- **Document templates** — DocuSeal-compatible JSON template format with named roles, field placements, and signing order
+- **Full audit trail** — every create/view/sign/void action is logged to an immutable local audit log
+- **Tamper-evident seal** — after all signers complete, a PGP signature over the entire document package (hash + all sigs + audit) creates a non-repudiable final seal
+- **Multi-signer workflow** — sequential or parallel signing, per-signer roles (signer, cosigner, witness, notary, steward, trustee)
+- **Offline-capable** — all crypto and storage is local; network access only needed for TSA requests and SKComm delivery
+- **Zero vendor lock-in** — signatures and timestamps are standard open formats; no proprietary formats or cloud accounts required
+
+---
+
+## Usage
+
+### CLI
 
 ```bash
-# Sign a PDF
-skseal sign contract.pdf --key private.asc --name "Alice"
+# Sign a PDF with a PGP key
+skseal sign contract.pdf --key ~/.gnupg/private.asc --name "Alice"
 
-# Verify all signatures on a document
-skseal verify <document-id> --pubkey alice.pub.asc
+# Sign with a hardware token (YubiKey / NitroKey / HSM)
+skseal token sign contract.pdf --name "Alice" --pin 123456
 
-# List documents
+# Verify signatures on a document
+skseal verify <document-id> --pubkey alice.asc --pubkey bob.asc
+
+# List documents (optionally filter by status)
 skseal list
 skseal list --status pending
 
-# Show audit trail
+# List templates
+skseal templates
+
+# Show the full audit trail for a document
 skseal audit <document-id>
 
-# Timestamp a file via RFC 3161 TSA
-skseal timestamp stamp contract.pdf
-skseal timestamp verify contract.pdf
-
-# Sign using a hardware token (YubiKey, NitroKey)
-skseal token list
-skseal token sign contract.pdf --name "Alice" --pin <PIN>
-
 # Start the REST API server
-skseal serve --port 8400
+skseal serve
+skseal serve --host 0.0.0.0 --port 8400
+
+# RFC 3161 timestamping
+skseal timestamp stamp contract.pdf
+skseal timestamp stamp contract.pdf --tsa https://freetsa.org/tsr --algorithm sha512
+skseal timestamp verify contract.pdf
+skseal timestamp verify contract.pdf --token contract.pdf.tsr
+skseal timestamp info contract.pdf.tsr
+
+# Hardware token inspection
+skseal token list
+skseal token info
 ```
 
 ### Python API
 
 ```python
+from pathlib import Path
 from skseal.engine import SealEngine
-from skseal.models import Document, Signer, DocumentStatus
+from skseal.models import Document, DocumentStatus, Signer
+from skseal.store import DocumentStore
 
 engine = SealEngine()
-pdf_data = open("contract.pdf", "rb").read()
-pdf_hash = engine.hash_bytes(pdf_data)
+store = DocumentStore()
 
-signer = Signer(name="Alice", fingerprint="DEADBEEF...")
-doc = Document(title="NDA", pdf_path="contract.pdf", pdf_hash=pdf_hash, signers=[signer])
+# Hash a document
+pdf_bytes = Path("contract.pdf").read_bytes()
+doc_hash = engine.hash_bytes(pdf_bytes)
 
+# Create a document and signer
+signer = Signer(name="Alice", fingerprint="ABCD1234...")
+doc = Document(title="NDA", pdf_hash=doc_hash, signers=[signer])
+
+# Sign with a PGP key
+key_armor = Path("private.asc").read_text()
 doc = engine.sign_document(
     document=doc,
     signer_id=signer.signer_id,
-    private_key_armor=open("private.asc").read(),
-    passphrase="hunter2",
-    pdf_data=pdf_data,
+    private_key_armor=key_armor,
+    passphrase="my-passphrase",
+    pdf_data=pdf_bytes,
 )
-print(doc.status)  # DocumentStatus.COMPLETED
+store.save_document(doc, pdf_data=pdf_bytes)
+
+# Verify all signatures
+pubkey_armor = Path("alice_public.asc").read_text()
+results = engine.verify_document(doc, {signer.fingerprint: pubkey_armor}, pdf_data=pdf_bytes)
+print(results)  # {signer_id: True}
+
+# Seal the completed document
+seal = engine.seal_document(doc, key_armor, "my-passphrase")
 ```
+
+```python
+# RFC 3161 timestamp
+from skseal.timestamp import timestamp_document, verify_timestamp
+
+result = timestamp_document("contract.pdf")
+if result.is_valid:
+    print(f"Certified: {result.response.timestamp}")
+    print(f"Token:     {result.tsr_path}")
+```
+
+```python
+# PKCS#11 hardware token
+from skseal.pkcs11 import PKCS11Config, list_tokens, sign_with_token
+
+tokens = list_tokens("/usr/lib/opensc-pkcs11.so")
+for t in tokens:
+    print(f"Slot {t.slot_id}: {t.label} — key: {t.has_private_key}")
+
+config = PKCS11Config(
+    module_path="/usr/lib/libykcs11.so",
+    token_label="YubiKey PIV",
+    pin="123456",
+)
+signature = sign_with_token(data=b"hash-bytes", config=config)
+```
+
+```python
+# P2P signing via SKComm
+from skseal.skcomm_transport import SealSKCommTransport
+from skcomm import SKComm
+
+transport = SealSKCommTransport(identity_fingerprint="ABCD1234...")
+skcomm = SKComm(...)
+
+# Peer A: send a signing request
+result = transport.send_signing_request(
+    skcomm, document_id="...", signer_fingerprint="EFGH5678..."
+)
+
+# Peer B: receive the request and respond
+requests = transport.receive_signing_requests(skcomm)
+transport.respond_to_signing_request(
+    skcomm, requests[0], private_key_armor=key_armor, passphrase="..."
+)
+
+# Peer A: poll inbox and apply all responses
+transport.poll_and_apply_responses(skcomm)
+```
+
+### REST API
+
+Start the server with `skseal serve` (default `http://127.0.0.1:8400`).
+
+```bash
+# Create a document
+curl -X POST http://localhost:8400/api/documents \
+  -H "Content-Type: application/json" \
+  -d '{"title": "NDA", "signers": [{"name": "Alice", "fingerprint": "ABCD..."}]}'
+
+# Upload the PDF
+curl -X POST http://localhost:8400/api/documents/<id>/upload \
+  -F "file=@contract.pdf"
+
+# Register a signer's public key (required before browser-side signing)
+curl -X POST http://localhost:8400/api/keys/register \
+  -H "Content-Type: application/json" \
+  -d '{"fingerprint": "ABCD...", "armor": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n..."}'
+
+# Sign server-side (automation / agent workflows)
+curl -X POST http://localhost:8400/api/documents/<id>/sign \
+  -H "Content-Type: application/json" \
+  -d '{"signer_id": "...", "private_key_armor": "...", "passphrase": "..."}'
+
+# Verify all signatures
+curl -X POST http://localhost:8400/api/documents/<id>/verify \
+  -H "Content-Type: application/json" -d '{}'
+
+# Seal a completed document
+curl -X POST http://localhost:8400/api/documents/<id>/seal \
+  -H "Content-Type: application/json" \
+  -d '{"sealing_key_armor": "...", "passphrase": "..."}'
+
+# Request an RFC 3161 timestamp
+curl -X POST http://localhost:8400/api/documents/<id>/timestamp \
+  -H "Content-Type: application/json" -d '{"hash_algorithm": "sha256"}'
+
+# Health check
+curl http://localhost:8400/api/health
+```
+
+Interactive API docs: `http://localhost:8400/docs`
+
+Browser signing UI (private key stays in browser):
+`http://localhost:8400/ui/sign.html?doc=<id>&signer=<signer_id>`
+
+---
+
+## MCP Tools
+
+The MCP server exposes the full signing lifecycle as tools for AI agents. Start it with `python -m skseal.mcp_server`.
+
+Add to your agent configuration (`~/.claude/settings.json`, Cursor `settings.json`, etc.):
+
+```json
+{
+  "mcpServers": {
+    "skseal": {
+      "command": "python",
+      "args": ["-m", "skseal.mcp_server"]
+    }
+  }
+}
+```
+
+| Tool | Description |
+|---|---|
+| `list_templates` | List all available document templates (IDs, names, descriptions) |
+| `create_document` | Create a new signing document from a template; specify signers with name, role, and PGP fingerprint |
+| `list_documents` | List all documents with optional status filter (draft, pending, completed, etc.) |
+| `sign_document` | Apply a PGP signature to a document using a private key armor and passphrase |
+| `verify_document` | Verify all signatures on a document; returns per-signer validity |
+| `seal_document` | Finalize a fully-signed document with a tamper-evident PGP seal over the complete package |
+| `get_audit_trail` | Get the full chronological audit history for a document |
+| `store_public_key` | Import and cache a signer's public PGP key for future verification |
+| `send_signing_request_p2p` | Send a signing request to a peer via SKComm P2P transport |
+| `check_signing_inbox` | Poll the SKComm inbox for incoming signing requests or responses |
+| `respond_to_signing_request` | Sign a received P2P request locally and return the signature via SKComm |
+| `apply_signing_responses` | Apply all pending P2P signing responses to their respective documents |
+
+---
+
+## Configuration
+
+### Data directory
+
+All data is stored locally. The default location is `~/.skseal`. Override per-command:
+
+```bash
+skseal --data-dir /srv/skseal sign contract.pdf --key private.asc --name "Alice"
+```
+
+Directory layout:
+
+```
+~/.skseal/
+├── documents/
+│   └── <document-id>/
+│       ├── document.json       # Document model (signers, signatures, fields)
+│       ├── document.pdf        # Attached PDF
+│       └── audit.jsonl         # Append-only audit log (one JSON object per line)
+├── templates/
+│   └── <template-id>.json
+└── keys/
+    └── <fingerprint>.asc       # Cached public keys for verification
+```
+
+### TSA endpoints
+
+The default TSA for RFC 3161 timestamps is [FreeTSA](https://freetsa.org) (free, no account). Override per-command:
+
+```bash
+skseal timestamp stamp contract.pdf --tsa http://timestamp.digicert.com
+```
+
+Automatic fallback order: FreeTSA → DigiCert → GlobalSign.
+
+### PKCS#11 modules
+
+The module is auto-detected from well-known paths. Override with `--module`:
+
+```bash
+skseal token sign contract.pdf --module /usr/lib/libykcs11.so --name "Alice" --pin 123456
+```
+
+Default search paths:
+- `/usr/lib/opensc-pkcs11.so`
+- `/usr/lib/x86_64-linux-gnu/opensc-pkcs11.so`
+- `/usr/lib/libykcs11.so`
+- `/usr/lib/softhsm/libsofthsm2.so`
+- `/opt/homebrew/lib/opensc-pkcs11.so` (macOS Homebrew)
+
+Run `skseal token info` to inspect detected modules and available tokens.
+
+### Optional dependencies
+
+| Extra | Packages | Enables |
+|---|---|---|
+| `[timestamp]` | `rfc3161ng`, `asn1crypto` | Full RFC 3161 token parsing and certificate chain validation |
+| `[pkcs11]` | `PyKCS11` | Hardware token signing (YubiKey, NitroKey, HSM) |
+| `[all]` | All of the above | Everything |
+
+Without `rfc3161ng`, the timestamp client falls back to a built-in minimal ASN.1 DER parser that can submit requests and verify the status field but skips certificate chain validation. Without `PyKCS11`, the `token` commands are unavailable.
+
+---
+
+## Contributing / Development
+
+```bash
+git clone https://github.com/smilinTux/skseal.git
+cd skseal
+
+# Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate
+
+# Install in editable mode with all dev dependencies
+pip install -e ".[all,dev]"
+
+# Run the test suite
+pytest
+
+# Run with coverage
+pytest --cov=skseal --cov-report=term-missing
+
+# Lint and format
+ruff check src/
+black src/
+```
+
+### Project layout
+
+```
+skseal/
+├── src/skseal/
+│   ├── cli.py              # click CLI entry point
+│   ├── api.py              # FastAPI REST server
+│   ├── mcp_server.py       # MCP stdio server (AI agent tools)
+│   ├── engine.py           # Crypto core (SealEngine)
+│   ├── models.py           # Pydantic data models
+│   ├── models_timestamp.py # Timestamp models
+│   ├── store.py            # Local filesystem DocumentStore
+│   ├── timestamp.py        # RFC 3161 timestamp client
+│   ├── pkcs11.py           # PKCS#11 hardware token support
+│   ├── skcomm_transport.py # P2P signing transport
+│   └── ui/                 # Browser signing UI (OpenPGP.js)
+├── tests/
+├── pyproject.toml
+└── package.json
+```
+
+### Submitting changes
+
+1. Fork the repository and create a feature branch off `main`
+2. Add or update tests for any changed behaviour
+3. Ensure `pytest` and `ruff check src/` pass before opening a PR
+4. Open a pull request against `main` with a clear description of what changed and why
+
+Issues and feature requests: [github.com/smilinTux/skseal/issues](https://github.com/smilinTux/skseal/issues)
+
+---
 
 ## License
 
