@@ -13,9 +13,9 @@ Tools:
     seal_document             — Finalize a fully-signed document with tamper-evident seal
     get_audit_trail           — Get the full audit history for a document
     store_public_key          — Import a signer's public PGP key
-    send_signing_request_p2p  — Send a signing request via SKComm P2P transport
-    check_signing_inbox       — Poll SKComm inbox for signing requests/responses
-    respond_to_signing_request — Sign a received P2P request and return the signature via SKComm
+    send_signing_request_p2p  — Send a signing request via SKComms P2P transport
+    check_signing_inbox       — Poll SKComms inbox for signing requests/responses
+    respond_to_signing_request — Sign a received P2P request and return the signature via SKComms
     apply_signing_responses   — Apply all pending P2P signing responses to documents
 
 Invocation (all equivalent):
@@ -407,11 +407,11 @@ async def list_tools() -> list[Tool]:
                 "required": ["document_id", "signer_fingerprint", "pin"],
             },
         ),
-        # ── P2P signing via SKComm ──────────────────────────────────────
+        # ── P2P signing via SKComms ──────────────────────────────────────
         Tool(
             name="send_signing_request_p2p",
             description=(
-                "Send a signing request to a peer via SKComm P2P transport. "
+                "Send a signing request to a peer via SKComms P2P transport. "
                 "Delivers the document hash and signer details directly to the signer's "
                 "agent — no centralized server involved. "
                 "The signer receives a SIGNING_REQUEST envelope and signs locally."
@@ -442,7 +442,7 @@ async def list_tools() -> list[Tool]:
         Tool(
             name="check_signing_inbox",
             description=(
-                "Poll the SKComm inbox for incoming signing requests (SIGNING_REQUEST) "
+                "Poll the SKComms inbox for incoming signing requests (SIGNING_REQUEST) "
                 "and signing responses (SIGNING_RESPONSE). "
                 "Returns both types so the caller can sign pending requests or apply "
                 "received signatures to documents."
@@ -463,7 +463,7 @@ async def list_tools() -> list[Tool]:
             name="respond_to_signing_request",
             description=(
                 "Sign a P2P signing request with the local PGP key and deliver "
-                "the signature back to the requestor via SKComm. "
+                "the signature back to the requestor via SKComms. "
                 "The private key never leaves this machine — only the document hash "
                 "and resulting signature travel over the transport."
             ),
@@ -513,7 +513,7 @@ async def list_tools() -> list[Tool]:
         Tool(
             name="apply_signing_responses",
             description=(
-                "Poll the SKComm inbox for SIGNING_RESPONSE envelopes and apply any "
+                "Poll the SKComms inbox for SIGNING_RESPONSE envelopes and apply any "
                 "received signatures to the corresponding documents. "
                 "Returns a list of application results per response."
             ),
@@ -1216,26 +1216,26 @@ async def _handle_sign_with_hardware_token(args: dict) -> list[TextContent]:
 
 
 # ─────────────────────────────────────────────────────────────
-# P2P Signing Tool Handlers (SKComm transport)
+# P2P Signing Tool Handlers (SKComms transport)
 # ─────────────────────────────────────────────────────────────
 
 
-def _get_skcomm():
-    """Initialise an SKComm instance from the default config.
+def _get_skcomms():
+    """Initialise an SKComms instance from the default config.
 
     Returns:
-        SKComm instance, or None if skcomm is not installed/configured.
+        SKComms instance, or None if skcomms is not installed/configured.
     """
     try:
-        from skcomm import SKComm
-        return SKComm.from_config()
+        from skcomms import SKComms
+        return SKComms.from_config()
     except Exception as exc:
-        logger.warning("SKComm unavailable: %s", exc)
+        logger.warning("SKComms unavailable: %s", exc)
         return None
 
 
 async def _handle_send_signing_request_p2p(args: dict) -> list[TextContent]:
-    """Send a SIGNING_REQUEST to a peer via SKComm P2P transport.
+    """Send a SIGNING_REQUEST to a peer via SKComms P2P transport.
 
     Args:
         args: document_id, signer_fingerprint, optional sender_fingerprint,
@@ -1244,7 +1244,7 @@ async def _handle_send_signing_request_p2p(args: dict) -> list[TextContent]:
     Returns:
         JSON {request_id, delivered, transport, error}.
     """
-    from .skcomm_transport import SealSKCommTransport
+    from .skcomms_transport import SealSKCommsTransport
 
     document_id: str = args.get("document_id", "")
     signer_fingerprint: str = args.get("signer_fingerprint", "")
@@ -1254,20 +1254,20 @@ async def _handle_send_signing_request_p2p(args: dict) -> list[TextContent]:
     if not signer_fingerprint:
         return _error("signer_fingerprint is required")
 
-    skcomm = _get_skcomm()
-    if skcomm is None:
+    skcomms = _get_skcomms()
+    if skcomms is None:
         return _error(
-            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+            "SKComms is not available. Install skcomms and configure ~/.skcomms/config.yml"
         )
 
-    transport = SealSKCommTransport(
+    transport = SealSKCommsTransport(
         store=_store,
         identity_fingerprint=args.get("sender_fingerprint", ""),
     )
 
     try:
         result = transport.send_signing_request(
-            skcomm=skcomm,
+            skcomms=skcomms,
             document_id=document_id,
             signer_fingerprint=signer_fingerprint,
             sender_fingerprint=args.get("sender_fingerprint") or None,
@@ -1282,7 +1282,7 @@ async def _handle_send_signing_request_p2p(args: dict) -> list[TextContent]:
 
 
 async def _handle_check_signing_inbox(args: dict) -> list[TextContent]:
-    """Poll SKComm inbox for SIGNING_REQUEST and/or SIGNING_RESPONSE envelopes.
+    """Poll SKComms inbox for SIGNING_REQUEST and/or SIGNING_RESPONSE envelopes.
 
     Args:
         args: Optional message_type ("requests" | "responses" | "both").
@@ -1290,17 +1290,17 @@ async def _handle_check_signing_inbox(args: dict) -> list[TextContent]:
     Returns:
         JSON {requests: [...], responses: [...]}.
     """
-    from .skcomm_transport import SealSKCommTransport
+    from .skcomms_transport import SealSKCommsTransport
 
     message_type: str = args.get("message_type", "both")
 
-    skcomm = _get_skcomm()
-    if skcomm is None:
+    skcomms = _get_skcomms()
+    if skcomms is None:
         return _error(
-            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+            "SKComms is not available. Install skcomms and configure ~/.skcomms/config.yml"
         )
 
-    transport = SealSKCommTransport(store=_store)
+    transport = SealSKCommsTransport(store=_store)
 
     # We need to receive envelopes once and split by type to avoid double-consuming.
     # Use lower-level receive and filter manually.
@@ -1308,9 +1308,9 @@ async def _handle_check_signing_inbox(args: dict) -> list[TextContent]:
     responses_list = []
 
     try:
-        from skcomm.models import MessageType
+        from skcomms.models import MessageType
 
-        envelopes = skcomm.receive()
+        envelopes = skcomms.receive()
         import json as _json_mod
 
         for env in envelopes:
@@ -1327,7 +1327,7 @@ async def _handle_check_signing_inbox(args: dict) -> list[TextContent]:
             except Exception:
                 continue
     except Exception as exc:
-        return _error(f"Failed to poll SKComm inbox: {exc}")
+        return _error(f"Failed to poll SKComms inbox: {exc}")
 
     result: dict = {}
     if message_type in ("requests", "both"):
@@ -1340,11 +1340,11 @@ async def _handle_check_signing_inbox(args: dict) -> list[TextContent]:
 
 
 async def _handle_respond_to_signing_request(args: dict) -> list[TextContent]:
-    """Sign a P2P signing request and deliver the signature via SKComm.
+    """Sign a P2P signing request and deliver the signature via SKComms.
 
     The private key is loaded from disk, used to sign the document hash,
     and the key material never leaves this machine — only the hash and
-    signature travel over SKComm.
+    signature travel over SKComms.
 
     Args:
         args: request_id, document_id, document_hash, signer_id,
@@ -1354,7 +1354,7 @@ async def _handle_respond_to_signing_request(args: dict) -> list[TextContent]:
     Returns:
         JSON {request_id, signed, signer_fingerprint, delivered, transport, error}.
     """
-    from .skcomm_transport import SealSKCommTransport
+    from .skcomms_transport import SealSKCommsTransport
 
     required = ["request_id", "document_id", "document_hash",
                 "signer_id", "sender_fingerprint", "private_key_path", "passphrase"]
@@ -1372,10 +1372,10 @@ async def _handle_respond_to_signing_request(args: dict) -> list[TextContent]:
     except Exception as exc:
         return _error(f"Failed to parse private key: {exc}")
 
-    skcomm = _get_skcomm()
-    if skcomm is None:
+    skcomms = _get_skcomms()
+    if skcomms is None:
         return _error(
-            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+            "SKComms is not available. Install skcomms and configure ~/.skcomms/config.yml"
         )
 
     # Reconstruct the request_payload dict from individual args
@@ -1387,9 +1387,9 @@ async def _handle_respond_to_signing_request(args: dict) -> list[TextContent]:
         "sender_fingerprint": args["sender_fingerprint"],
     }
 
-    transport = SealSKCommTransport(store=_store)
+    transport = SealSKCommsTransport(store=_store)
     result = transport.respond_to_signing_request(
-        skcomm=skcomm,
+        skcomms=skcomms,
         request_payload=request_payload,
         private_key_armor=private_key_armor,
         passphrase=args.get("passphrase", ""),
@@ -1407,18 +1407,18 @@ async def _handle_apply_signing_responses(args: dict) -> list[TextContent]:
     Returns:
         JSON list of {request_id, document_id, applied, document_status, error}.
     """
-    from .skcomm_transport import SealSKCommTransport
+    from .skcomms_transport import SealSKCommsTransport
 
     verify: bool = args.get("verify", True)
 
-    skcomm = _get_skcomm()
-    if skcomm is None:
+    skcomms = _get_skcomms()
+    if skcomms is None:
         return _error(
-            "SKComm is not available. Install skcomm and configure ~/.skcomm/config.yml"
+            "SKComms is not available. Install skcomms and configure ~/.skcomms/config.yml"
         )
 
-    transport = SealSKCommTransport(store=_store)
-    results = transport.poll_and_apply_responses(skcomm, verify=verify)
+    transport = SealSKCommsTransport(store=_store)
+    results = transport.poll_and_apply_responses(skcomms, verify=verify)
     return _json(results)
 
 

@@ -31,7 +31,7 @@ flowchart TD
       API["REST API<br/>api.py · FastAPI :8400"]
       MCP["MCP server<br/>mcp_server.py · 17 tools"]
       WEB["Browser client<br/>web/ · OpenPGP.js"]
-      P2P["P2P transport<br/>skcomm_transport.py"]
+      P2P["P2P transport<br/>skcomms_transport.py"]
     end
 
     subgraph CORE["Core"]
@@ -160,30 +160,30 @@ bytes and checks the seal signature. (`engine.seal_document` / `verify_seal`.)
 
 ---
 
-## Peer-to-peer signing (over SKComm)
+## Peer-to-peer signing (over SKComms)
 
 When signers are on different machines, skseal moves the signing request and response
-over **SKComm** — there is no central server in the signing flow, and only the hash
-and resulting signature ever cross the wire. The transport uses dedicated SKComm
+over **SKComms** — there is no central server in the signing flow, and only the hash
+and resulting signature ever cross the wire. The transport uses dedicated SKComms
 `MessageType.SIGNING_REQUEST` / `SIGNING_RESPONSE` envelopes so routers can separate
-signing traffic from chat. (`skcomm_transport.py`, exposed as MCP tools.)
+signing traffic from chat. (`skcomms_transport.py`, exposed as MCP tools.)
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant A as Peer A (requestor)
-    participant K as SKComm
+    participant K as SKComms
     participant B as Peer B (signer)
 
     A->>A: send_signing_request(doc_id, signer_fingerprint)
     Note over A: builds SIGNING_REQUEST payload<br/>(doc hash, signer id, fields, expiry)
-    A->>K: skcomm.send(SIGNING_REQUEST, thread=doc_id)
+    A->>K: skcomms.send(SIGNING_REQUEST, thread=doc_id)
     K->>B: envelope delivered
     B->>B: receive_signing_requests() — does NOT auto-sign
     Note over B: human approval / policy decides
     B->>B: respond_to_signing_request(request, private_key, passphrase)
     Note over B: _pgp_sign(doc_hash) locally — key stays on B
-    B->>K: skcomm.send(SIGNING_RESPONSE, in_reply_to=envelope)
+    B->>K: skcomms.send(SIGNING_RESPONSE, in_reply_to=envelope)
     K->>A: response delivered
     A->>A: apply_signing_response(verify=True)
     Note over A: verify sig vs cached/provided pubkey,<br/>append SignatureRecord, update signer,<br/>recompute completion, save
@@ -205,7 +205,7 @@ convenience loop for the requestor side (cron / MCP tool).
 | `src/skseal/cli.py` | click + rich CLI — `sign`, `verify`, `list`, `templates`, `audit`, `serve`, and the `timestamp` / `token` command groups |
 | `src/skseal/api.py` | FastAPI app (default `:8400`) — template/document CRUD, `sign`, `sign-client` (browser-signed), `verify`, `seal`, key register, timestamp endpoints, `/api/health`; serves the browser UI, mirrors DocuSeal REST conventions |
 | `src/skseal/mcp_server.py` | MCP stdio server exposing 17 tools (list/create/sign/verify/seal/audit/store-key, timestamp ×3, hardware ×2, P2P ×4) for AI-agent orchestration |
-| `src/skseal/skcomm_transport.py` | `SealSKCommTransport` — P2P signing request/response over SKComm (`SIGNING_REQUEST` / `SIGNING_RESPONSE` envelopes) |
+| `src/skseal/skcomms_transport.py` | `SealSKCommsTransport` — P2P signing request/response over SKComms (`SIGNING_REQUEST` / `SIGNING_RESPONSE` envelopes) |
 | `src/skseal/timestamp.py` | RFC 3161 TSA client (`rfc3161ng` primary, `cryptography`/`asn1crypto` fallback) → DER `.tsr` tokens; FreeTSA / DigiCert / GlobalSign defaults |
 | `src/skseal/models_timestamp.py` | Pydantic models + enums for timestamp config, response, and verification status |
 | `src/skseal/pkcs11.py` | PKCS#11 hardware-token signing — module discovery, `list_tokens`, `sign_with_token` (key stays on YubiKey / NitroKey / HSM) |
@@ -235,7 +235,7 @@ convenience loop for the requestor side (cron / MCP tool).
 skseal is a **Core** capability — signing is an identity assertion, so it belongs in
 the sovereign identity/trust plane next to `capauth` (with which it shares the **PGP
 fingerprint** as the unit of identity). It optionally rides the **Comms** tier
-(`skcomm`) for peer-to-peer signing, anchors to **external trust** (RFC 3161 TSAs,
+(`skcomms`) for peer-to-peer signing, anchors to **external trust** (RFC 3161 TSAs,
 PKCS#11 tokens), and persists to local sovereign storage. Hard runtime deps are just
 `pgpy` + `pypdf`; everything else is opt-in.
 
@@ -249,7 +249,7 @@ flowchart TD
     end
 
     subgraph COMMS["Comms (optional)"]
-      SKCOMM["skcomm<br/>P2P signing envelopes"]
+      SKCOMMS["skcomms<br/>P2P signing envelopes"]
     end
 
     subgraph STORE_T["Local sovereign storage"]
@@ -262,7 +262,7 @@ flowchart TD
     end
 
     SKSEAL -->|"shared fingerprint identity"| CAPAUTH
-    SKSEAL -->|"SIGNING_REQUEST / RESPONSE"| SKCOMM
+    SKSEAL -->|"SIGNING_REQUEST / RESPONSE"| SKCOMMS
     SKSEAL -->|"persist"| FS
     SKSEAL -->|"hash → .tsr"| TSA
     SKSEAL -->|"on-device signing"| HW

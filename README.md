@@ -101,7 +101,7 @@ print(doc.status)   # DocumentStatus.COMPLETED  (all signers signed)
 | **REST API** | `api.py` | FastAPI server (default port **8400**) — full template/document/sign/verify/seal/key/timestamp surface, mirrors DocuSeal REST conventions, serves the browser signing UI |
 | **Browser client** | `web/` (`@skseal/web`) | Client-side signing with **OpenPGP.js** — keys generated and stored in browser IndexedDB, signing happens locally, only the signature reaches the server |
 | **MCP server** | `mcp_server.py` | 17 MCP tools so any AI agent (Claude Code, Cursor, Claude Desktop…) can drive the full signing lifecycle |
-| **P2P transport** | `skcomm_transport.py` | Request/response signing **over SKComm** — no central server in the signing flow; only hashes + signatures cross the wire |
+| **P2P transport** | `skcomms_transport.py` | Request/response signing **over SKComms** — no central server in the signing flow; only hashes + signatures cross the wire |
 | **RFC 3161 timestamps** | `timestamp.py` | TSA timestamping (FreeTSA default) for non-repudiation / eIDAS / ETSI archival |
 | **Hardware tokens** | `pkcs11.py` | PKCS#11 signing on YubiKey / NitroKey / HSM — private key stays on-device |
 | **Templates** | `templates/` | Ready-made: NDA, operating agreement, PMA membership, service agreement, trust declaration |
@@ -112,7 +112,7 @@ skseal is a **Core** capability — it's part of the sovereign identity/trust pl
 because a document signature *is* an identity assertion. It reuses the same **PGP
 fingerprint identity** that `capauth` issues, persists everything through its own
 filesystem store, and (optionally) moves signing requests over the **Comms** tier
-via `skcomm`. None of these are hard runtime requirements except pgpy + pypdf — the
+via `skcomms`. None of these are hard runtime requirements except pgpy + pypdf — the
 rest light up as you grow.
 
 ```mermaid
@@ -125,7 +125,7 @@ flowchart TD
     end
 
     subgraph COMMS["Comms — transport (optional)"]
-      SKCOMM["skcomm<br/>(P2P SIGNING_REQUEST / SIGNING_RESPONSE)"]
+      SKCOMMS["skcomms<br/>(P2P SIGNING_REQUEST / SIGNING_RESPONSE)"]
     end
 
     subgraph LOCAL["Local sovereign storage"]
@@ -138,7 +138,7 @@ flowchart TD
     end
 
     SKSEAL -->|"same fingerprint identity"| CAPAUTH
-    SKSEAL -->|"peer signing (no central server)"| SKCOMM
+    SKSEAL -->|"peer signing (no central server)"| SKCOMMS
     SKSEAL -->|"persist docs · audit · keys"| STORE
     SKSEAL -->|"hash → timestamp token"| TSA
     SKSEAL -->|"sign hash on-device"| TOKEN

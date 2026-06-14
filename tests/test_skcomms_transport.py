@@ -1,6 +1,6 @@
-"""Tests for SKSeal ↔ SKComm P2P signing transport.
+"""Tests for SKSeal ↔ SKComms P2P signing transport.
 
-These tests use a mock SKComm so no real network transport is required.
+These tests use a mock SKComms so no real network transport is required.
 The crypto is real (pgpy), so signing and verification are exercised end-to-end.
 """
 
@@ -16,8 +16,8 @@ import pytest
 
 from skseal.engine import SealEngine
 from skseal.models import Document, DocumentStatus, Signer, SignerStatus
-from skseal.skcomm_transport import (
-    SealSKCommTransport,
+from skseal.skcomms_transport import (
+    SealSKCommsTransport,
     _signing_request_payload,
     _signing_response_payload,
 )
@@ -29,20 +29,20 @@ from skseal.skcomm_transport import (
 PASSPHRASE = "test-passphrase-123"
 
 
-def _make_mock_skcomm(envelopes=None):
-    """Return a mock SKComm with send() and receive() stubbed."""
-    skcomm = MagicMock()
+def _make_mock_skcomms(envelopes=None):
+    """Return a mock SKComms with send() and receive() stubbed."""
+    skcomms = MagicMock()
 
     # send() returns a DeliveryReport-like object
     report = MagicMock()
     report.delivered = True
     report.transport = "file"
     report.error = None
-    skcomm.send.return_value = report
+    skcomms.send.return_value = report
 
     # receive() returns provided envelopes (default empty)
-    skcomm.receive.return_value = envelopes or []
-    return skcomm
+    skcomms.receive.return_value = envelopes or []
+    return skcomms
 
 
 def _make_signing_request_envelope(payload: dict):
@@ -51,7 +51,7 @@ def _make_signing_request_envelope(payload: dict):
     env.envelope_id = str(uuid.uuid4())
     env.sender = payload.get("sender_fingerprint", "ABCD")
 
-    from skcomm.models import MessageType  # may not be importable in test env
+    from skcomms.models import MessageType  # may not be importable in test env
 
     env.payload.content_type = MessageType.SIGNING_REQUEST
     env.payload.content = json.dumps(payload)
@@ -64,7 +64,7 @@ def _make_signing_response_envelope(payload: dict):
     env.envelope_id = str(uuid.uuid4())
     env.sender = payload.get("signer_fingerprint", "ABCD")
 
-    from skcomm.models import MessageType
+    from skcomms.models import MessageType
 
     env.payload.content_type = MessageType.SIGNING_RESPONSE
     env.payload.content = json.dumps(payload)
@@ -128,7 +128,7 @@ class TestPayloadBuilders:
 
 
 # ---------------------------------------------------------------------------
-# SealSKCommTransport: send_signing_request
+# SealSKCommsTransport: send_signing_request
 # ---------------------------------------------------------------------------
 
 class TestSendSigningRequest:
@@ -144,11 +144,11 @@ class TestSendSigningRequest:
         document = Document(title="NDA", pdf_hash="hash1", signers=[signer])
         tmp_store.save_document(document)
 
-        skcomm = _make_mock_skcomm()
-        transport = SealSKCommTransport(store=tmp_store, identity_fingerprint=chef_fp)
+        skcomms = _make_mock_skcomms()
+        transport = SealSKCommsTransport(store=tmp_store, identity_fingerprint=chef_fp)
 
         result = transport.send_signing_request(
-            skcomm=skcomm,
+            skcomms=skcomms,
             document_id=document.document_id,
             signer_fingerprint=lumina_fp,
             sender_fingerprint=chef_fp,
@@ -159,9 +159,9 @@ class TestSendSigningRequest:
         assert result["error"] is None
         assert "request_id" in result
 
-        # Verify SKComm was called with the right recipient and type
-        call_kwargs = skcomm.send.call_args
-        from skcomm.models import MessageType
+        # Verify SKComms was called with the right recipient and type
+        call_kwargs = skcomms.send.call_args
+        from skcomms.models import MessageType
         assert call_kwargs.kwargs["recipient"] == lumina_fp
         assert call_kwargs.kwargs["message_type"] == MessageType.SIGNING_REQUEST
         payload = json.loads(call_kwargs.kwargs["message"])
@@ -169,12 +169,12 @@ class TestSendSigningRequest:
         assert payload["signer_fingerprint"] == lumina_fp
 
     def test_raises_if_document_not_found(self, tmp_store):
-        skcomm = _make_mock_skcomm()
-        transport = SealSKCommTransport(store=tmp_store)
+        skcomms = _make_mock_skcomms()
+        transport = SealSKCommsTransport(store=tmp_store)
 
         with pytest.raises(FileNotFoundError):
             transport.send_signing_request(
-                skcomm=skcomm,
+                skcomms=skcomms,
                 document_id="nonexistent-doc-id",
                 signer_fingerprint="ABCDEF1234567890ABCDEF1234567890ABCDEF12",
             )
@@ -183,19 +183,19 @@ class TestSendSigningRequest:
         document = Document(title="NDA", pdf_hash="hash1", signers=[])
         tmp_store.save_document(document)
 
-        skcomm = _make_mock_skcomm()
-        transport = SealSKCommTransport(store=tmp_store)
+        skcomms = _make_mock_skcomms()
+        transport = SealSKCommsTransport(store=tmp_store)
 
         with pytest.raises(ValueError, match="No signer"):
             transport.send_signing_request(
-                skcomm=skcomm,
+                skcomms=skcomms,
                 document_id=document.document_id,
                 signer_fingerprint="ABCDEF1234567890ABCDEF1234567890ABCDEF12",
             )
 
 
 # ---------------------------------------------------------------------------
-# SealSKCommTransport: respond_to_signing_request (Peer B side)
+# SealSKCommsTransport: respond_to_signing_request (Peer B side)
 # ---------------------------------------------------------------------------
 
 class TestRespondToSigningRequest:
@@ -216,11 +216,11 @@ class TestRespondToSigningRequest:
             "_sender": chef_fp,
         }
 
-        skcomm = _make_mock_skcomm()
-        transport = SealSKCommTransport(store=tmp_store)
+        skcomms = _make_mock_skcomms()
+        transport = SealSKCommsTransport(store=tmp_store)
 
         result = transport.respond_to_signing_request(
-            skcomm=skcomm,
+            skcomms=skcomms,
             request_payload=request_payload,
             private_key_armor=priv_lumina,
             passphrase=PASSPHRASE,
@@ -231,8 +231,8 @@ class TestRespondToSigningRequest:
         assert result["signer_fingerprint"] == lumina_fp
 
         # Verify the response was sent as SIGNING_RESPONSE
-        from skcomm.models import MessageType
-        call_kwargs = skcomm.send.call_args.kwargs
+        from skcomms.models import MessageType
+        call_kwargs = skcomms.send.call_args.kwargs
         assert call_kwargs["message_type"] == MessageType.SIGNING_RESPONSE
         assert call_kwargs["recipient"] == chef_fp
 
@@ -252,11 +252,11 @@ class TestRespondToSigningRequest:
             "sender_fingerprint": "AAAA",
         }
 
-        skcomm = _make_mock_skcomm()
-        transport = SealSKCommTransport(store=tmp_store)
+        skcomms = _make_mock_skcomms()
+        transport = SealSKCommsTransport(store=tmp_store)
 
         result = transport.respond_to_signing_request(
-            skcomm=skcomm,
+            skcomms=skcomms,
             request_payload=request_payload,
             private_key_armor=priv_lumina,
             passphrase=PASSPHRASE,
@@ -267,7 +267,7 @@ class TestRespondToSigningRequest:
 
 
 # ---------------------------------------------------------------------------
-# SealSKCommTransport: receive + apply signing response (Peer A side)
+# SealSKCommsTransport: receive + apply signing response (Peer A side)
 # ---------------------------------------------------------------------------
 
 class TestApplySigningResponse:
@@ -308,7 +308,7 @@ class TestApplySigningResponse:
             "signed_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        transport = SealSKCommTransport(store=tmp_store)
+        transport = SealSKCommsTransport(store=tmp_store)
         # Store the public key so verification works
         tmp_store.store_public_key(lumina_fp, pub_lumina)
 
@@ -346,7 +346,7 @@ class TestApplySigningResponse:
             "signed_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        transport = SealSKCommTransport(store=tmp_store)
+        transport = SealSKCommsTransport(store=tmp_store)
 
         with pytest.raises(ValueError, match="[Ss]ignature verification failed"):
             transport.apply_signing_response(response_payload, verify=True)
@@ -374,7 +374,7 @@ class TestApplySigningResponse:
             "signed_at": datetime.now(timezone.utc).isoformat(),
         }
 
-        transport = SealSKCommTransport(store=tmp_store)
+        transport = SealSKCommsTransport(store=tmp_store)
         # Apply once
         transport.apply_signing_response(response_payload, verify=True)
         # Apply again — should not raise, should be a no-op
@@ -428,12 +428,12 @@ class TestFullP2PRoundTrip:
             report.error = None
             return report
 
-        skcomm_peer_a = MagicMock()
-        skcomm_peer_a.send.side_effect = mock_send
+        skcomms_peer_a = MagicMock()
+        skcomms_peer_a.send.side_effect = mock_send
 
-        transport_a = SealSKCommTransport(store=tmp_store, identity_fingerprint=chef_fp)
+        transport_a = SealSKCommsTransport(store=tmp_store, identity_fingerprint=chef_fp)
         result = transport_a.send_signing_request(
-            skcomm=skcomm_peer_a,
+            skcomms=skcomms_peer_a,
             document_id=document.document_id,
             signer_fingerprint=lumina_fp,
             sender_fingerprint=chef_fp,
@@ -443,7 +443,7 @@ class TestFullP2PRoundTrip:
 
         # ── Peer B receives and signs ──────────────────────────────────
         # The message was "delivered" — simulate it appearing in Peer B's inbox
-        from skcomm.models import MessageType
+        from skcomms.models import MessageType
 
         sent_envelope = MagicMock()
         sent_envelope.envelope_id = str(uuid.uuid4())
@@ -465,12 +465,12 @@ class TestFullP2PRoundTrip:
             report.error = None
             return report
 
-        skcomm_peer_b = MagicMock()
-        skcomm_peer_b.receive.return_value = [sent_envelope]
-        skcomm_peer_b.send.side_effect = mock_send_b
+        skcomms_peer_b = MagicMock()
+        skcomms_peer_b.receive.return_value = [sent_envelope]
+        skcomms_peer_b.send.side_effect = mock_send_b
 
-        transport_b = SealSKCommTransport(store=tmp_store, identity_fingerprint=lumina_fp)
-        requests = transport_b.receive_signing_requests(skcomm_peer_b)
+        transport_b = SealSKCommsTransport(store=tmp_store, identity_fingerprint=lumina_fp)
+        requests = transport_b.receive_signing_requests(skcomms_peer_b)
 
         assert len(requests) == 1
         req = requests[0]
@@ -478,7 +478,7 @@ class TestFullP2PRoundTrip:
         assert req["document_hash"] == document_hash
 
         sign_result = transport_b.respond_to_signing_request(
-            skcomm=skcomm_peer_b,
+            skcomms=skcomms_peer_b,
             request_payload=req,
             private_key_armor=priv_lumina,
             passphrase=PASSPHRASE,
@@ -493,9 +493,9 @@ class TestFullP2PRoundTrip:
         response_env.payload.content_type = MessageType.SIGNING_RESPONSE
         response_env.payload.content = response_messages[0]["message"]
 
-        skcomm_peer_a.receive.return_value = [response_env]
+        skcomms_peer_a.receive.return_value = [response_env]
 
-        results = transport_a.poll_and_apply_responses(skcomm_peer_a, verify=True)
+        results = transport_a.poll_and_apply_responses(skcomms_peer_a, verify=True)
         assert len(results) == 1
         assert results[0]["applied"] is True
         assert results[0]["document_status"] == "completed"

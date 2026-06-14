@@ -1,6 +1,6 @@
-"""SKSeal ↔ SKComm P2P signing transport.
+"""SKSeal ↔ SKComms P2P signing transport.
 
-Delivers document signing requests and responses over sovereign SKComm
+Delivers document signing requests and responses over sovereign SKComms
 transport — no centralized server in the signing flow.
 
 Flow:
@@ -11,7 +11,7 @@ Flow:
     receive_signing_responses() ◄─SIGNING_RESPONSE── send_signing_response()
     apply_signing_response()
 
-The payload is JSON-encoded and carried as the SKComm envelope content.
+The payload is JSON-encoded and carried as the SKComms envelope content.
 The envelope MessageType is SIGNING_REQUEST or SIGNING_RESPONSE so
 routers/filters can handle signing traffic separately from chat.
 
@@ -39,10 +39,10 @@ from .models import (
 from .store import DocumentStore
 
 if TYPE_CHECKING:
-    from skcomm import SKComm
-    from skcomm.models import MessageEnvelope
+    from skcomms import SKComms
+    from skcomms.models import MessageEnvelope
 
-logger = logging.getLogger("skseal.skcomm_transport")
+logger = logging.getLogger("skseal.skcomms_transport")
 
 
 # ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ def _signing_request_payload(
         expire_seconds: Seconds until the request expires (default 24 h).
 
     Returns:
-        JSON-serialisable dict ready to embed in an SKComm envelope.
+        JSON-serialisable dict ready to embed in an SKComms envelope.
     """
     if request_id is None:
         request_id = str(uuid.uuid4())
@@ -113,7 +113,7 @@ def _signing_response_payload(
         field_values: Filled form field values (signer-completed fields).
 
     Returns:
-        JSON-serialisable dict ready to embed in an SKComm envelope.
+        JSON-serialisable dict ready to embed in an SKComms envelope.
     """
     return {
         "request_id": request_id,
@@ -131,8 +131,8 @@ def _signing_response_payload(
 # Transport class
 # ---------------------------------------------------------------------------
 
-class SealSKCommTransport:
-    """Wire SKSeal document signing through SKComm P2P transports.
+class SealSKCommsTransport:
+    """Wire SKSeal document signing through SKComms P2P transports.
 
     Stateless helper — all persistent state lives in the DocumentStore.
 
@@ -155,7 +155,7 @@ class SealSKCommTransport:
 
     def send_signing_request(
         self,
-        skcomm: "SKComm",
+        skcomms: "SKComms",
         document_id: str,
         signer_fingerprint: str,
         *,
@@ -163,13 +163,13 @@ class SealSKCommTransport:
         request_id: Optional[str] = None,
         expire_seconds: int = 86400,
     ) -> dict:
-        """Send a signing request to a peer via SKComm.
+        """Send a signing request to a peer via SKComms.
 
         Loads the document, finds the signer by fingerprint, serialises
-        a SIGNING_REQUEST payload, and delivers it via SKComm.
+        a SIGNING_REQUEST payload, and delivers it via SKComms.
 
         Args:
-            skcomm: Live SKComm instance.
+            skcomms: Live SKComms instance.
             document_id: ID of the document to sign.
             signer_fingerprint: PGP fingerprint of the intended signer.
             sender_fingerprint: Fingerprint of the local identity
@@ -203,9 +203,9 @@ class SealSKCommTransport:
         )
 
         try:
-            from skcomm.models import MessageType, Urgency
+            from skcomms.models import MessageType, Urgency
 
-            report = skcomm.send(
+            report = skcomms.send(
                 recipient=signer_fingerprint,
                 message=json.dumps(payload),
                 message_type=MessageType.SIGNING_REQUEST,
@@ -230,7 +230,7 @@ class SealSKCommTransport:
                     actor_fingerprint=fp,
                     details=(
                         f"P2P signing request sent to {signer_fingerprint[:16]}… "
-                        f"via SKComm (delivered={delivered})"
+                        f"via SKComms (delivered={delivered})"
                     ),
                 )
             )
@@ -257,25 +257,25 @@ class SealSKCommTransport:
     # ------------------------------------------------------------------
 
     def receive_signing_requests(
-        self, skcomm: "SKComm"
+        self, skcomms: "SKComms"
     ) -> list[dict]:
-        """Poll SKComm inbox for incoming SIGNING_REQUEST envelopes.
+        """Poll SKComms inbox for incoming SIGNING_REQUEST envelopes.
 
         Returns the parsed payload dicts — does NOT auto-sign. The
         caller decides whether to sign (human approval or auto-sign).
 
         Args:
-            skcomm: Live SKComm instance.
+            skcomms: Live SKComms instance.
 
         Returns:
             List of decoded signing request payload dicts.
         """
         try:
-            from skcomm.models import MessageType
+            from skcomms.models import MessageType
 
-            envelopes = skcomm.receive()
+            envelopes = skcomms.receive()
         except Exception as exc:
-            logger.warning("Failed to receive from SKComm: %s", exc)
+            logger.warning("Failed to receive from SKComms: %s", exc)
             return []
 
         requests = []
@@ -298,21 +298,21 @@ class SealSKCommTransport:
 
     def respond_to_signing_request(
         self,
-        skcomm: "SKComm",
+        skcomms: "SKComms",
         request_payload: dict,
         private_key_armor: str,
         passphrase: str,
         field_values: Optional[dict] = None,
     ) -> dict:
-        """Sign the document hash and deliver the response via SKComm.
+        """Sign the document hash and deliver the response via SKComms.
 
         This is the Peer B side. Peer B receives a SIGNING_REQUEST,
         calls this method to produce and deliver a SIGNING_RESPONSE.
         Keys never leave the signer's machine — only the hash and
-        the resulting signature travel over SKComm.
+        the resulting signature travel over SKComms.
 
         Args:
-            skcomm: Live SKComm instance.
+            skcomms: Live SKComms instance.
             request_payload: Decoded SIGNING_REQUEST payload dict.
             private_key_armor: ASCII-armored PGP private key (stays local).
             passphrase: Passphrase to unlock the private key.
@@ -366,14 +366,14 @@ class SealSKCommTransport:
             field_values=field_values,
         )
 
-        # Deliver response back to requestor via SKComm
+        # Deliver response back to requestor via SKComms
         delivered = False
         transport = None
         error = None
         try:
-            from skcomm.models import MessageType, Urgency
+            from skcomms.models import MessageType, Urgency
 
-            report = skcomm.send(
+            report = skcomms.send(
                 recipient=requestor_fingerprint or request_payload.get("_sender", ""),
                 message=json.dumps(response),
                 message_type=MessageType.SIGNING_RESPONSE,
@@ -410,24 +410,24 @@ class SealSKCommTransport:
     # ------------------------------------------------------------------
 
     def receive_signing_responses(
-        self, skcomm: "SKComm"
+        self, skcomms: "SKComms"
     ) -> list[dict]:
-        """Poll SKComm inbox for incoming SIGNING_RESPONSE envelopes.
+        """Poll SKComms inbox for incoming SIGNING_RESPONSE envelopes.
 
         Returns decoded response payload dicts.
 
         Args:
-            skcomm: Live SKComm instance.
+            skcomms: Live SKComms instance.
 
         Returns:
             List of decoded signing response payload dicts.
         """
         try:
-            from skcomm.models import MessageType
+            from skcomms.models import MessageType
 
-            envelopes = skcomm.receive()
+            envelopes = skcomms.receive()
         except Exception as exc:
-            logger.warning("Failed to receive from SKComm: %s", exc)
+            logger.warning("Failed to receive from SKComms: %s", exc)
             return []
 
         responses = []
@@ -536,7 +536,7 @@ class SealSKCommTransport:
             document_hash=document_hash,
             signature_armor=signature_armor,
             signed_at=signed_at,
-            user_agent="skcomm-p2p",
+            user_agent="skcomms-p2p",
             field_values=field_values,
         )
         document.signatures.append(record)
@@ -554,7 +554,7 @@ class SealSKCommTransport:
                 actor_fingerprint=signer_fingerprint,
                 actor_name=signer.name,
                 timestamp=signed_at,
-                details=f"P2P signature received via SKComm from {signer_fingerprint[:16]}…",
+                details=f"P2P signature received via SKComms from {signer_fingerprint[:16]}…",
             )
         )
 
@@ -567,7 +567,7 @@ class SealSKCommTransport:
                     document_id=document_id,
                     action=AuditAction.COMPLETED,
                     timestamp=document.completed_at,
-                    details="All signers have signed via P2P SKComm transport.",
+                    details="All signers have signed via P2P SKComms transport.",
                 )
             )
         else:
@@ -588,7 +588,7 @@ class SealSKCommTransport:
 
     def poll_and_apply_responses(
         self,
-        skcomm: "SKComm",
+        skcomms: "SKComms",
         *,
         verify: bool = True,
     ) -> list[dict]:
@@ -598,14 +598,14 @@ class SealSKCommTransport:
         periodically (e.g. from a cron or MCP tool).
 
         Args:
-            skcomm: Live SKComm instance.
+            skcomms: Live SKComms instance.
             verify: Whether to verify signatures before applying.
 
         Returns:
             List of result dicts:
               {request_id, document_id, applied, document_status, error}
         """
-        responses = self.receive_signing_responses(skcomm)
+        responses = self.receive_signing_responses(skcomms)
         results = []
         for resp in responses:
             result: dict = {
