@@ -20,7 +20,7 @@ dependencies = [
     "rich>=13.0,<15.0",
     "fastapi>=0.110,<1.0",
     "uvicorn>=0.27",
-    "aiofiles>=23.0,<25.0",
+    "aiofiles>=23.0,<26.0",
 ]
 
 [project.optional-dependencies]

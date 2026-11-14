@@ -17,7 +17,7 @@ Requires-Dist: click<9.0,>=8.0
 Requires-Dist: rich<15.0,>=13.0
 Requires-Dist: fastapi<1.0,>=0.110
 Requires-Dist: uvicorn>=0.27
-Requires-Dist: aiofiles<25.0,>=23.0
+Requires-Dist: aiofiles<26.0,>=23.0
 Provides-Extra: pkcs11
 Requires-Dist: PyKCS11>=1.5.12; extra == "pkcs11"
 Provides-Extra: timestamp
