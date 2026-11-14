@@ -15,11 +15,15 @@ authors = [
 dependencies = [
     "pydantic>=2.0,<3.0",
     "pgpy>=0.6,<1.0",
+    # pgpy imports imghdr, which Python 3.13 removed from the stdlib.
+    "standard-imghdr>=3.13; python_version >= '3.13'",
     "pypdf>=6.21.4,<7.0",
     "click>=8.0,<9.0",
     "rich>=13.0,<15.0",
     "fastapi>=0.110,<1.0",
     "uvicorn>=0.27",
+    # The API takes form uploads (fastapi.Form / UploadFile).
+    "python-multipart>=0.0.9",
     "aiofiles>=23.0,<26.0",
 ]
 
@@ -27,16 +31,22 @@ dependencies = [
 pkcs11 = [
     "PyKCS11>=1.5.12",
 ]
+skcomms = [
+    # SealSKCommsTransport (signing requests over SKComms).
+    "skcomms>=0.2",
+]
 timestamp = [
     "rfc3161ng>=2.1",
     "asn1crypto>=1.5",
 ]
 all = [
+    "skcomms>=0.2",
     "PyKCS11>=1.5.12",
     "rfc3161ng>=2.1",
     "asn1crypto>=1.5",
 ]
 dev = [
+    "skcomms>=0.2",
     "pytest>=8.0",
     "pytest-cov>=4.0",
     "pytest-asyncio>=0.23",
