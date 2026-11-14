@@ -1,3 +1,5 @@
+LICENSE
+README.md
 pyproject.toml
 src/skseal/__init__.py
 src/skseal/api.py
@@ -7,6 +9,7 @@ src/skseal/mcp_server.py
 src/skseal/models.py
 src/skseal/models_timestamp.py
 src/skseal/pkcs11.py
+src/skseal/skcomms_transport.py
 src/skseal/store.py
 src/skseal/timestamp.py
 src/skseal.egg-info/PKG-INFO
@@ -15,8 +18,13 @@ src/skseal.egg-info/dependency_links.txt
 src/skseal.egg-info/entry_points.txt
 src/skseal.egg-info/requires.txt
 src/skseal.egg-info/top_level.txt
+src/skseal/ui/keygen.html
+src/skseal/ui/sign.html
+tests/test_api.py
+tests/test_cli.py
 tests/test_engine.py
 tests/test_models.py
 tests/test_pkcs11.py
+tests/test_skcomms_transport.py
 tests/test_store.py
 tests/test_timestamp.py
